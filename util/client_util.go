@@ -18,7 +18,7 @@ func NewFirbolgClient(baseURL string, appId int) *FirbolgClient {
 	return &FirbolgClient{
 		BaseURL:    baseURL,
 		HTTPClient: &http.Client{},
-		AppId:      strconv.Itoa(appId), //VX:TODO app id as part of *all* clients? I kinda like it
+		AppId:      strconv.Itoa(appId), //VX:Note app id is part of all clients here. We could make it optional if needed.
 	}
 }
 
