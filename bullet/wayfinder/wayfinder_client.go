@@ -8,7 +8,7 @@ import (
 )
 
 type WayFinderClient struct {
-	*util.FirbolgClient
+	Client *util.FirbolgClient
 }
 
 func (c *WayFinderClient) WayFinderInsertOne(req WayFinderPutRequest) (int64, error) {
@@ -17,7 +17,10 @@ func (c *WayFinderClient) WayFinderInsertOne(req WayFinderPutRequest) (int64, er
 		return 0, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	resp, err := c.PostReq("/insert-one", bodyBytes)
+	if c.Client == nil {
+		return 0, fmt.Errorf("FirbolgClient is nil")
+	}
+	resp, err := c.Client.PostReq("/insert-one", bodyBytes)
 	if err != nil {
 		return 0, fmt.Errorf("request failed: %w", err)
 	}
@@ -28,7 +31,6 @@ func (c *WayFinderClient) WayFinderInsertOne(req WayFinderPutRequest) (int64, er
 	if err := json.Unmarshal(resp, &result); err != nil {
 		return 0, fmt.Errorf("failed to unmarshal response: %w, message body was '%s'", err, string(resp))
 	}
-
 	return result.ItemId, nil
 }
 
@@ -38,7 +40,10 @@ func (c *WayFinderClient) WayFinderQueryByPrefix(req WayFinderPrefixQueryRequest
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	resp, err := c.PostReq("/query-by-prefix", bodyBytes)
+	if c.Client == nil {
+		return nil, fmt.Errorf("FirbolgClient is nil")
+	}
+	resp, err := c.Client.PostReq("/query-by-prefix", bodyBytes)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}

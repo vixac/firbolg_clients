@@ -11,14 +11,14 @@ import (
 type FirbolgClient struct {
 	BaseURL    string
 	HTTPClient *http.Client
-	AppID      string
+	AppId      string
 }
 
 func NewFirbolgClient(baseURL string, appId int) *FirbolgClient {
 	return &FirbolgClient{
 		BaseURL:    baseURL,
 		HTTPClient: &http.Client{},
-		AppID:      strconv.Itoa(appId), //VX:TODO app id as part of *all* clients? I kinda like it
+		AppId:      strconv.Itoa(appId), //VX:TODO app id as part of *all* clients? I kinda like it
 	}
 }
 
@@ -28,8 +28,10 @@ func (c *FirbolgClient) PostReq(urlSuffix string, body []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("X-App-ID", c.AppID)
-
+	httpReq.Header.Set("X-App-ID", c.AppId)
+	if c.HTTPClient == nil {
+		return nil, fmt.Errorf("HttpClient is nil")
+	}
 	// execute
 	resp, err := c.HTTPClient.Do(httpReq)
 	if err != nil {
