@@ -67,3 +67,34 @@ func TestWayFinderClient_WayFinderQueryByPrefix(t *testing.T) {
 	assert.Equal(t, int64(42), items[0].ItemId)
 	assert.Equal(t, "some payload", items[0].Payload)
 }
+
+func TestWayFinderClient_WayFinderGetOne(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/wayfinder/get-one", func(w http.ResponseWriter, r *http.Request) {
+		// Verify method and content-type if you like here too
+		w.WriteHeader(http.StatusOK)
+		w.Write(loadTestData(t, "get_one_response.json"))
+	})
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	c := util.NewFirbolgClient(server.URL, 123)
+	client := WayFinderClient{
+		Client: c,
+	}
+
+	item, err := client.WayFinderGetOne(WayFinderGetOneRequest{
+		BucketId: 1,
+		Key:      "foo",
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, item)
+	assert.Equal(t, "bar", item.Payload)
+	assert.NotNil(t, item.Tag)
+	assert.Equal(t, *item.Tag, int64(52))
+
+	assert.NotNil(t, item.Metric)
+	assert.Equal(t, *item.Metric, 12.3)
+
+}

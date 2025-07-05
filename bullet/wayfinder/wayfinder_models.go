@@ -17,9 +17,20 @@ type WayFinderPutRequest struct {
 }
 
 type WayFinderPrefixQueryRequest struct {
-	BucketId    int32    `json:"bucketId"`
-	Prefix      string   `json:"prefix"`
-	Tags        []int64  `json:"tags,omitempty"`
-	MetricValue *float64 `json:"metricValue,omitempty"`
-	MetricIsGt  bool     `json:"metricIsGt"`
+	BucketId   int32    `json:"bucketId"`
+	Prefix     string   `json:"prefix"`
+	Tags       []int64  `json:"tags,omitempty"`
+	Metric     *float64 `json:"metric,omitempty"`
+	MetricIsGt bool     `json:"metricIsGt"`
+}
+
+type WayFinderGetOneRequest struct {
+	BucketId int    `json:"bucketId"`
+	Key      string `json:"key"`
+}
+
+type WayFinderItem struct {
+	Tag     *int64   `json:"tag,omitempty"`
+	Metric  *float64 `json:"metric,omitempty"`
+	Payload string   `json:"payload"`
 }
