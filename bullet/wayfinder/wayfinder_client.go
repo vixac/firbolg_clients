@@ -7,6 +7,11 @@ import (
 	util "github.com/vixac/firbolg_clients/util"
 )
 
+type WayfinderClientInterface interface {
+	WayFinderInsertOne(req WayFinderPutRequest) (int64, error)
+	WayFinderQueryByPrefix(req WayFinderPrefixQueryRequest) ([]WayFinderQueryItem, error)
+}
+
 type WayFinderClient struct {
 	Client *util.FirbolgClient
 }
