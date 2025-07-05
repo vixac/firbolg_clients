@@ -9,7 +9,7 @@ import (
 
 func main() {
 	//compilation check for conformance
-	var wayfinderClient bullet.WayfinderClientInterface
+	var wayfinderClient bullet.WayFinderClientInterface
 	fg := util.NewFirbolgClient("url", 213)
 	wayfinderClient = &bullet.WayFinderClient{Client: fg}
 

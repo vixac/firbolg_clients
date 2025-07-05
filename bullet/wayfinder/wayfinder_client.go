@@ -7,7 +7,7 @@ import (
 	util "github.com/vixac/firbolg_clients/util"
 )
 
-type WayfinderClientInterface interface {
+type WayFinderClientInterface interface {
 	WayFinderInsertOne(req WayFinderPutRequest) (int64, error)
 	WayFinderQueryByPrefix(req WayFinderPrefixQueryRequest) ([]WayFinderQueryItem, error)
 }
@@ -25,7 +25,7 @@ func (c *WayFinderClient) WayFinderInsertOne(req WayFinderPutRequest) (int64, er
 	if c.Client == nil {
 		return 0, fmt.Errorf("FirbolgClient is nil")
 	}
-	resp, err := c.Client.PostReq("/insert-one", bodyBytes)
+	resp, err := c.Client.PostReq("/wayfinder/insert-one", bodyBytes)
 	if err != nil {
 		return 0, fmt.Errorf("request failed: %w", err)
 	}
@@ -48,7 +48,7 @@ func (c *WayFinderClient) WayFinderQueryByPrefix(req WayFinderPrefixQueryRequest
 	if c.Client == nil {
 		return nil, fmt.Errorf("FirbolgClient is nil")
 	}
-	resp, err := c.Client.PostReq("/query-by-prefix", bodyBytes)
+	resp, err := c.Client.PostReq("/wayfinder/query-by-prefix", bodyBytes)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
