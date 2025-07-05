@@ -20,7 +20,7 @@ type WayFinderPrefixQueryRequest struct {
 	BucketId   int32    `json:"bucketId"`
 	Prefix     string   `json:"prefix"`
 	Tags       []int64  `json:"tags,omitempty"`
-	Metric     *float64 `json:"metricomitempty"`
+	Metric     *float64 `json:"metric,omitempty"`
 	MetricIsGt bool     `json:"metricIsGt"`
 }
 
