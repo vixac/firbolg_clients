@@ -21,7 +21,7 @@ func loadTestData(t *testing.T, filename string) []byte {
 
 func TestWayFinderClient_WayFinderInsertOne(t *testing.T) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/insert-one", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/wayfinder/insert-one", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write(loadTestData(t, "insert_one_response.json"))
 	})
@@ -43,7 +43,7 @@ func TestWayFinderClient_WayFinderInsertOne(t *testing.T) {
 
 func TestWayFinderClient_WayFinderQueryByPrefix(t *testing.T) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/query-by-prefix", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/wayfinder/query-by-prefix", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write(loadTestData(t, "query_by_prefix_response.json"))
 	})
