@@ -10,6 +10,7 @@ import (
 type WayFinderClientInterface interface {
 	WayFinderInsertOne(req WayFinderPutRequest) (int64, error)
 	WayFinderQueryByPrefix(req WayFinderPrefixQueryRequest) ([]WayFinderQueryItem, error)
+	WayFinderGetOne(req WayFinderGetOneRequest) (*WayFinderItem, error)
 }
 
 type WayFinderClient struct {
@@ -37,6 +38,31 @@ func (c *WayFinderClient) WayFinderInsertOne(req WayFinderPutRequest) (int64, er
 		return 0, fmt.Errorf("failed to unmarshal response: %w, message body was '%s'", err, string(resp))
 	}
 	return result.ItemId, nil
+}
+
+// WayFinderGetOne sends a GET request to retrieve a WayFinder item by bucket/key
+func (c *WayFinderClient) WayFinderGetOne(req WayFinderGetOneRequest) (*WayFinderItem, error) {
+	bodyBytes, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	if c.Client == nil {
+		return nil, fmt.Errorf("FirbolgClient is nil")
+	}
+	resp, err := c.Client.PostReq("/wayfinder/get-one", bodyBytes)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	fmt.Printf("VX: get resp is '%s'", string(resp))
+
+	var result struct {
+		Item WayFinderItem `json:"item"`
+	}
+	if err := json.Unmarshal(resp, &result); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w, message body was '%s'", err, string(resp))
+	}
+	return &result.Item, nil
 }
 
 func (c *WayFinderClient) WayFinderQueryByPrefix(req WayFinderPrefixQueryRequest) ([]WayFinderQueryItem, error) {
