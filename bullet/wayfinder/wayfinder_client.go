@@ -17,6 +17,13 @@ type WayFinderClient struct {
 	Client *util.FirbolgClient
 }
 
+func NewWayFinderClient(baseURL string, appId int64) *WayFinderClient {
+	firbolg := util.NewFirbolgClient(baseURL, appId)
+	return &WayFinderClient{
+		Client: firbolg,
+	}
+}
+
 func (c *WayFinderClient) WayFinderInsertOne(req WayFinderPutRequest) (int64, error) {
 	bodyBytes, err := json.Marshal(req)
 	if err != nil {
@@ -54,7 +61,6 @@ func (c *WayFinderClient) WayFinderGetOne(req WayFinderGetOneRequest) (*WayFinde
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	fmt.Printf("VX: get resp is '%s'", string(resp))
 
 	var result struct {
 		Item WayFinderItem `json:"item"`
