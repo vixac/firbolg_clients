@@ -57,6 +57,7 @@ func (c *WayFinderClient) WayFinderGetOne(req WayFinderGetOneRequest) (*WayFinde
 	if c.Client == nil {
 		return nil, fmt.Errorf("FirbolgClient is nil")
 	}
+	fmt.Println("FC: about to send this request to get one", string(bodyBytes))
 	resp, err := c.Client.PostReq("/wayfinder/get-one", bodyBytes)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)

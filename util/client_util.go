@@ -24,7 +24,9 @@ func NewFirbolgClient(baseURL string, appId int64) *FirbolgClient {
 }
 
 func (c *FirbolgClient) PostReq(urlSuffix string, body []byte) ([]byte, error) {
-	httpReq, err := http.NewRequest("POST", c.BaseURL+urlSuffix, bytes.NewBuffer(body))
+	endpoint := c.BaseURL + urlSuffix
+	fmt.Println("FC: Hitting endpoint: ", endpoint)
+	httpReq, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
