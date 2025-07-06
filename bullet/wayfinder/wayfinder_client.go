@@ -61,7 +61,6 @@ func (c *WayFinderClient) WayFinderGetOne(req WayFinderGetOneRequest) (*WayFinde
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	fmt.Printf("VX: get resp is '%s' \n", string(resp))
 
 	var result struct {
 		Item WayFinderItem `json:"item"`
