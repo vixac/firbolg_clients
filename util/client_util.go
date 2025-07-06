@@ -14,11 +14,12 @@ type FirbolgClient struct {
 	AppId      string
 }
 
-func NewFirbolgClient(baseURL string, appId int) *FirbolgClient {
+func NewFirbolgClient(baseURL string, appId int64) *FirbolgClient {
+	s := strconv.FormatInt(appId, 10)
 	return &FirbolgClient{
 		BaseURL:    baseURL,
 		HTTPClient: &http.Client{},
-		AppId:      strconv.Itoa(appId), //VX:Note app id is part of all clients here. We could make it optional if needed.
+		AppId:      s,
 	}
 }
 

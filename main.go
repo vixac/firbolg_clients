@@ -4,14 +4,16 @@ import (
 	"fmt"
 
 	bullet "github.com/vixac/firbolg_clients/bullet/wayfinder"
-	util "github.com/vixac/firbolg_clients/util"
+	wayfinder "github.com/vixac/firbolg_clients/bullet/wayfinder"
 )
 
 func main() {
 	//compilation check for conformance
 	var wayfinderClient bullet.WayFinderClientInterface
-	fg := util.NewFirbolgClient("url", 213)
-	wayfinderClient = &bullet.WayFinderClient{Client: fg}
+	wayfinderClient = wayfinder.NewWayFinderClient(
+		"baseUrl",
+		12345,
+	)
 
 	fmt.Printf("wayfinder works, %+v", wayfinderClient)
 
