@@ -30,6 +30,7 @@ type WayFinderGetOneRequest struct {
 }
 
 type WayFinderItem struct {
+	Item    int64    `json:"itemId"`
 	Tag     *int64   `json:"tag,omitempty"`
 	Metric  *float64 `json:"metric,omitempty"`
 	Payload string   `json:"payload"`
