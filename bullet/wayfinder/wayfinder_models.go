@@ -25,7 +25,7 @@ type WayFinderPrefixQueryRequest struct {
 }
 
 type WayFinderGetOneRequest struct {
-	BucketId int    `json:"bucketId"`
+	BucketId int32  `json:"bucketId"`
 	Key      string `json:"key"`
 }
 
