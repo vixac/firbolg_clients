@@ -31,7 +31,7 @@ func (c *FirbolgClient) PostReq(urlSuffix string, body []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("X-App-ID", c.AppId)
+	httpReq.Header.Set("X-App-Id", c.AppId)
 	if c.HTTPClient == nil {
 		return nil, fmt.Errorf("HttpClient is nil")
 	}
