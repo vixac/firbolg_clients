@@ -13,8 +13,6 @@ type WayFinderMockClient struct {
 	mu   sync.Mutex
 }
 
-var nextId = int64(1)
-
 func (m *WayFinderMockClient) WayFinderInsertOne(req WayFinderPutRequest) (int64, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -31,9 +29,8 @@ func (m *WayFinderMockClient) WayFinderInsertOne(req WayFinderPutRequest) (int64
 		Tag:     req.Tag,
 		Metric:  req.Metric,
 		Payload: req.Payload,
-		Item:    nextId,
+		Item:    id,
 	}
-	nextId = nextId + 1
 	return id, nil
 }
 
