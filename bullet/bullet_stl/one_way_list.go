@@ -12,9 +12,10 @@ import (
 A bullet agnostic data structure which allows insertions of subject object (key, value) pairs
 */
 type OneWayList interface {
-	Upsert(s OneWaySubject, o OneWayObject) error
-	DeleteViaSub(s OneWaySubject) error
-	GetObject(s OneWaySubject) (*OneWayObject, error)
+	Upsert(s ListSubject, o ListObject) error
+	DeleteViaSub(s ListSubject) error
+	//DeletePair(s ListSubject, o ListObject) error dont think we need it in the end.
+	GetObject(s ListSubject) (*ListObject, error)
 }
 
 // The bullet client implementation of the OnewayList
@@ -45,14 +46,14 @@ func buildKey(listName string, separator string, subject string, object *string)
 	return key
 }
 
-func (l *BulletOneWayList) Upsert(s OneWaySubject, o OneWayObject) error {
+func (l *BulletOneWayList) Upsert(s ListSubject, o ListObject) error {
 	//VX:TODO check keySepawrator is not used in names
 	key := buildKey(l.ListName, l.KeySeparator, s.Value, &o.Value)
 	return l.TrackStore.TrackInsertOne(l.BucketId, key, 0, nil, nil)
 }
 
 // VX:TODO test
-func (l *BulletOneWayList) DeleteViaSub(s OneWaySubject) error {
+func (l *BulletOneWayList) DeleteViaSub(s ListSubject) error {
 	key := buildKey(l.ListName, l.KeySeparator, s.Value, nil)
 	var values []track.TrackDeleteValue
 	values = append(values, track.TrackDeleteValue{
@@ -64,8 +65,21 @@ func (l *BulletOneWayList) DeleteViaSub(s OneWaySubject) error {
 	})
 }
 
+/*
+func (l *BulletOneWayList) DeletePair(s ListSubject, o ListObject) error {
+	key := buildKey(l.ListName, l.KeySeparator, s.Value, &o.Value)
+	var values []track.TrackDeleteValue
+	values = append(values, track.TrackDeleteValue{
+		BucketID: l.BucketId,
+		Key:      key,
+	})
+	return l.TrackStore.TrackDeleteMany(track.TrackDeleteMany{
+		Values: values,
+	})
+}
+*/
 // VX:TODO test
-func (l *BulletOneWayList) GetObject(s OneWaySubject) (*OneWayObject, error) {
+func (l *BulletOneWayList) GetObject(s ListSubject) (*ListObject, error) {
 	prefixKey := buildKey(l.ListName, l.KeySeparator, s.Value, nil)
 
 	req := track.TrackGetItemsByPrefixRequest{
@@ -100,7 +114,7 @@ func (l *BulletOneWayList) GetObject(s OneWaySubject) (*OneWayObject, error) {
 	if !found {
 		return nil, errors.New("invalid result did not contain the prefix")
 	}
-	return &OneWayObject{
+	return &ListObject{
 		Value: object,
 	}, nil
 }
