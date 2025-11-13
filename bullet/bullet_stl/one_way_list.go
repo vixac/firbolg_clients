@@ -48,6 +48,18 @@ func buildKey(listName string, separator string, subject string, object *string)
 
 func (l *BulletOneWayList) Upsert(s ListSubject, o ListObject) error {
 	//VX:TODO check keySepawrator is not used in names
+	existing, err := l.GetObject(s)
+	if err != nil {
+		return nil
+	}
+	//delete the key if it exists.
+	if existing != nil {
+		err := l.DeleteViaSub(s)
+		if err != nil {
+			return err
+		}
+	}
+
 	key := buildKey(l.ListName, l.KeySeparator, s.Value, &o.Value)
 	return l.TrackStore.TrackInsertOne(l.BucketId, key, 0, nil, nil)
 }
@@ -65,19 +77,6 @@ func (l *BulletOneWayList) DeleteViaSub(s ListSubject) error {
 	})
 }
 
-/*
-func (l *BulletOneWayList) DeletePair(s ListSubject, o ListObject) error {
-	key := buildKey(l.ListName, l.KeySeparator, s.Value, &o.Value)
-	var values []track.TrackDeleteValue
-	values = append(values, track.TrackDeleteValue{
-		BucketID: l.BucketId,
-		Key:      key,
-	})
-	return l.TrackStore.TrackDeleteMany(track.TrackDeleteMany{
-		Values: values,
-	})
-}
-*/
 // VX:TODO test
 func (l *BulletOneWayList) GetObject(s ListSubject) (*ListObject, error) {
 	prefixKey := buildKey(l.ListName, l.KeySeparator, s.Value, nil)
@@ -95,9 +94,10 @@ func (l *BulletOneWayList) GetObject(s ListSubject) (*ListObject, error) {
 	}
 	itemsByBucket := res.Values[l.BucketId]
 	if itemsByBucket == nil {
-		return nil, errors.New("missing bucket")
+		return nil, nil // its ok to get and find nothing
 	}
 
+	//if we're here we assume the object exists, so its an error if its not where we expect it
 	itemsInBucket := make([]string, 0, len(itemsByBucket))
 	for k := range itemsByBucket {
 		itemsInBucket = append(itemsInBucket, k)
