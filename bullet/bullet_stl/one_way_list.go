@@ -8,7 +8,6 @@ import (
 )
 
 /*
-*
 A bullet agnostic data structure which allows insertions of subject object (key, value) pairs
 */
 type OneWayList interface {
