@@ -7,6 +7,11 @@ import (
 	util "github.com/vixac/firbolg_clients/util"
 )
 
+// VX:TODO This is missing many depot bullet calls.
+type DepotClientInterface interface {
+	DepotInsertOne(req DepotRequest) error
+	DepotGetMany(req DepotGetManyRequest) (*DepotGetManyResponse, error)
+}
 type DepotClient struct {
 	*util.FirbolgClient
 }
