@@ -15,7 +15,7 @@ type DepotPutManyRequest struct {
 }
 
 type DepotGetManyRequest struct {
-	Keys []string `json:"keys"`
+	Keys []int64 `json:"keys"`
 }
 
 type DepotGetManyResponse struct {
