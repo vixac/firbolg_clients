@@ -43,12 +43,21 @@ type TrackGetKeys struct {
 }
 
 type TrackGetManyResponse struct {
-	Values  map[string]map[string]TrackValue `json:"values"`  // bucketId -> (key -> value)
-	Missing map[string][]string              `json:"missing"` // bucketId -> list of missing keys
+	Values  map[int32]map[string]TrackValue `json:"values"`  // bucketId -> (key -> value)
+	Missing map[string][]string             `json:"missing"` // bucketId -> list of missing keys
 }
 
 type TrackValue struct {
 	Value  int64    `bson:"value"`
 	Tag    *int64   `bson:"tag,omitempty"`
 	Metric *float64 `bson:"metric,omitempty"`
+}
+
+type TrackDeleteValue struct {
+	BucketID int32  `json:"bucketId"`
+	Key      string `json:"key"`
+}
+
+type TrackDeleteMany struct {
+	Values []TrackDeleteValue `json:"items"`
 }

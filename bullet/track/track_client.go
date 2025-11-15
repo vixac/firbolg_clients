@@ -2,14 +2,30 @@ package bullet
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 
 	util "github.com/vixac/firbolg_clients/util"
 )
 
+type TrackClientInterface interface {
+	TrackGetMany(req TrackGetManyRequest) (*TrackGetManyResponse, error)
+	TrackInsertOne(bucketID int32, key string, value int, tag *int64, metric *float64) error
+	TrackDeleteMany(req TrackDeleteMany) error
+	TrackGetManyByPrefix(req TrackGetItemsByPrefixRequest) (*TrackGetManyResponse, error)
+}
+
 type TrackClient struct {
 	*util.FirbolgClient
+}
+
+func (c *TrackClient) TrackDeleteMany(req TrackDeleteMany) error {
+	return errors.New("not impl")
+}
+
+func (c *TrackClient) TrackGetManyByPrefix(req TrackGetItemsByPrefixRequest) (*TrackGetManyResponse, error) {
+	return nil, errors.New("not impl")
 }
 
 func (c *TrackClient) TrackGetMany(req TrackGetManyRequest) (*TrackGetManyResponse, error) {
