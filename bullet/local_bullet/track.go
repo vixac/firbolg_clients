@@ -76,15 +76,10 @@ func (l *LocalBullet) TrackGetManyByPrefix(req bullet_interface.TrackGetItemsByP
 	}
 
 	items, err := l.Store.GetItemsByKeyPrefix(l.AppId, req.BucketID, req.Prefix, req.Tags, metricValue, metricIsGt)
-	for i, v := range items {
-		fmt.Printf("VX: item found from store is %+v , index %d\n", v, i)
-	}
 	if err != nil {
-		fmt.Printf("VX: ERr is %s \n", err.Error())
 		return nil, err
 	}
 	if len(items) == 0 {
-		fmt.Printf("VX:no items \n")
 		return nil, nil
 	}
 	values := make(map[int32]map[string]bullet_interface.TrackValue)

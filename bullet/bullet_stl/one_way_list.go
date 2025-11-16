@@ -36,7 +36,6 @@ func NewBulletOneWayList(store bullet_interface.TrackClientInterface, bucketId i
 	}, nil
 }
 
-// VX:TODO test
 // generates the key name. If the object is provided, is it appended
 func buildKey(listName string, separator string, subject string, object *string) string {
 	var key = listName + separator + subject + separator //note the separator on the end even if theres no object "a:b:c" or "a:b:"
@@ -54,7 +53,6 @@ func (l *BulletOneWayList) Upsert(s ListSubject, o ListObject) error {
 	}
 	//delete the key if it exists.
 	if existing != nil {
-		fmt.Printf("VX: DELETEING %+v \n", s)
 		err := l.DeletePair(s, *existing)
 		if err != nil {
 			return err
@@ -77,7 +75,6 @@ func (l *BulletOneWayList) DeleteBySub(s ListSubject) error {
 	return nil
 }
 
-// VX:TODO test
 func (l *BulletOneWayList) DeletePair(s ListSubject, o ListObject) error {
 	key := buildKey(l.ListName, l.KeySeparator, s.Value, &o.Value)
 	var values []bullet_interface.TrackDeleteValue
