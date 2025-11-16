@@ -5,12 +5,12 @@ import (
 )
 
 func (l *LocalBullet) DepotInsertOne(req bullet_interface.DepotRequest) error {
-	return l.store.DepotPut(l.appId, req.Key, req.Value)
+	return l.Store.DepotPut(l.AppId, req.Key, req.Value)
 }
 
 func (l *LocalBullet) DepotGetMany(req bullet_interface.DepotGetManyRequest) (*bullet_interface.DepotGetManyResponse, error) {
 
-	res, missing, err := l.store.DepotGetMany(l.appId, req.Keys)
+	res, missing, err := l.Store.DepotGetMany(l.AppId, req.Keys)
 	if err != nil {
 		return nil, err
 	}

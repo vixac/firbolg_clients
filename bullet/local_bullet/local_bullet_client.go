@@ -8,6 +8,6 @@ import (
 Local bullet is an implemtnation of BulletClientInterface that uses a local implemetnation of store, so no network calls required.
 */
 type LocalBullet struct {
-	store store.Store
-	appId int32
+	Store store.Store
+	AppId int32
 }

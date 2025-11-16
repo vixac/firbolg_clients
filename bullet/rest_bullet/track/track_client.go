@@ -2,12 +2,11 @@ package rest_bullet
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
 
 	"github.com/vixac/firbolg_clients/bullet/bullet_interface"
-	util "github.com/vixac/firbolg_clients/bullet/util"
+	"github.com/vixac/firbolg_clients/bullet/util"
 )
 
 type TrackClient struct {
@@ -15,27 +14,68 @@ type TrackClient struct {
 }
 
 func (c *TrackClient) TrackDeleteMany(req bullet_interface.TrackDeleteMany) error {
-	return errors.New("not impl")
+
+	bodyBytes, err := json.Marshal(req)
+	if err != nil {
+		return fmt.Errorf("failed to marshal TrackDeleteMany request: %w", err)
+	}
+
+	_, err = c.PostReq("/delete-many", bodyBytes)
+	if err != nil {
+		return fmt.Errorf("TrackDeleteMany request failed: %w", err)
+	}
+
+	return nil
 }
 
 func (c *TrackClient) TrackGetManyByPrefix(req bullet_interface.TrackGetItemsByPrefixRequest) (*bullet_interface.TrackGetManyResponse, error) {
-	return nil, errors.New("not impl")
+
+	bodyBytes, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal TrackGetManyByPrefix request: %w", err)
+	}
+
+	respBytes, err := c.PostReq("/get-query", bodyBytes)
+	if err != nil {
+		return nil, fmt.Errorf("TrackGetManyByPrefix request failed: %w", err)
+	}
+
+	// The Bullet API returns:
+	//   { "items": { bucketId -> (key -> TrackValue) } }
+	// but `TrackGetManyResponse` expects:
+	//   { "values": ..., "missing": ... }
+	//
+	// Which are different models.
+	//
+	// So we need a struct matching the API response.
+	var apiResp struct {
+		Items map[int32]map[string]bullet_interface.TrackValue `json:"items"`
+	}
+
+	if err := json.Unmarshal(respBytes, &apiResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal TrackGetManyByPrefix response: %w", err)
+	}
+	// Convert to TrackGetManyResponse:
+	out := &bullet_interface.TrackGetManyResponse{
+		Values:  apiResp.Items,
+		Missing: map[string][]string{}, // prefix query never returns missing entries
+	}
+
+	return out, nil
 }
 
 func (c *TrackClient) TrackGetMany(req bullet_interface.TrackGetManyRequest) (*bullet_interface.TrackGetManyResponse, error) {
 
-	// marshal request body
 	bodyBytes, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	// execute
 	resp, err := c.PostReq("/get-many", bodyBytes)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	// unmarshal
+
 	var result bullet_interface.TrackGetManyResponse
 	if err := json.Unmarshal(resp, &result); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w, message body was '%s'", err, string(resp))
