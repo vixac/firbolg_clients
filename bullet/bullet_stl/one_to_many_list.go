@@ -1,6 +1,6 @@
 package bullet_stl
 
-import track "github.com/vixac/firbolg_clients/bullet/track"
+import bullet "github.com/vixac/firbolg_clients/bullet/bullet_interface"
 
 type ManyToManyPair struct {
 	Subject ListSubject //the item above
@@ -22,14 +22,14 @@ type Mesh interface {
 //I *think* this can be handled with twoWay lists? not sure. not.
 
 type BulletMesh struct {
-	TrackStore        track.TrackClientInterface
+	TrackStore        bullet.TrackClientInterface
 	BucketId          int32
 	MeshName          string
 	UpwardSeparator   string
 	DownwardSeparator string
 }
 
-func NewBulletMesh(store track.TrackClientInterface, bucketId int32, meshName string, upwardSeparator string, downwardSeparator string) (*BulletMesh, error) {
+func NewBulletMesh(store bullet.TrackClientInterface, bucketId int32, meshName string, upwardSeparator string, downwardSeparator string) (*BulletMesh, error) {
 	//VX:TODO check meshName and upward and downward are all valid wrt eachother
 	return &BulletMesh{
 		TrackStore:        store,

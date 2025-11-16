@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	track "github.com/vixac/firbolg_clients/bullet/track"
+	bullet_interface "github.com/vixac/firbolg_clients/bullet/bullet_interface"
 )
 
 /*
@@ -19,13 +19,13 @@ type OneWayList interface {
 
 // The bullet client implementation of the OnewayList
 type BulletOneWayList struct {
-	TrackStore   track.TrackClientInterface
+	TrackStore   bullet_interface.TrackClientInterface
 	BucketId     int32
 	ListName     string // It's up to the caller to ensure this is unique across their app
 	KeySeparator string //The delimiter used in the key. The caller must ensure this does not appear anwyhere else
 }
 
-func NewBulletOneWayList(store track.TrackClientInterface, bucketId int32, listName string, separator string) (*BulletOneWayList, error) {
+func NewBulletOneWayList(store bullet_interface.TrackClientInterface, bucketId int32, listName string, separator string) (*BulletOneWayList, error) {
 	//VX:TODO check KeySeparator is not part of listName
 	return &BulletOneWayList{
 		TrackStore:   store,
@@ -66,12 +66,12 @@ func (l *BulletOneWayList) Upsert(s ListSubject, o ListObject) error {
 // VX:TODO test
 func (l *BulletOneWayList) DeleteViaSub(s ListSubject) error {
 	key := buildKey(l.ListName, l.KeySeparator, s.Value, nil)
-	var values []track.TrackDeleteValue
-	values = append(values, track.TrackDeleteValue{
+	var values []bullet_interface.TrackDeleteValue
+	values = append(values, bullet_interface.TrackDeleteValue{
 		BucketID: l.BucketId,
 		Key:      key,
 	})
-	return l.TrackStore.TrackDeleteMany(track.TrackDeleteMany{
+	return l.TrackStore.TrackDeleteMany(bullet_interface.TrackDeleteMany{
 		Values: values,
 	})
 }
@@ -80,7 +80,7 @@ func (l *BulletOneWayList) DeleteViaSub(s ListSubject) error {
 func (l *BulletOneWayList) GetObject(s ListSubject) (*ListObject, error) {
 	prefixKey := buildKey(l.ListName, l.KeySeparator, s.Value, nil)
 
-	req := track.TrackGetItemsByPrefixRequest{
+	req := bullet_interface.TrackGetItemsByPrefixRequest{
 		BucketID: l.BucketId,
 		Prefix:   prefixKey,
 	}

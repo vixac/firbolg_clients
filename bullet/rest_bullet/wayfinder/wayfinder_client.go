@@ -1,17 +1,12 @@
-package bullet
+package rest_bullet
 
 import (
 	"encoding/json"
 	"fmt"
 
-	util "github.com/vixac/firbolg_clients/util"
+	bullet_interface "github.com/vixac/firbolg_clients/bullet/bullet_interface"
+	util "github.com/vixac/firbolg_clients/bullet/util"
 )
-
-type WayFinderClientInterface interface {
-	WayFinderInsertOne(req WayFinderPutRequest) (int64, error)
-	WayFinderQueryByPrefix(req WayFinderPrefixQueryRequest) ([]WayFinderQueryItem, error)
-	WayFinderGetOne(req WayFinderGetOneRequest) (*WayFinderItem, error)
-}
 
 type WayFinderClient struct {
 	Client *util.FirbolgClient
@@ -24,7 +19,7 @@ func NewWayFinderClient(baseURL string, appId int64) *WayFinderClient {
 	}
 }
 
-func (c *WayFinderClient) WayFinderInsertOne(req WayFinderPutRequest) (int64, error) {
+func (c *WayFinderClient) WayFinderInsertOne(req bullet_interface.WayFinderPutRequest) (int64, error) {
 	bodyBytes, err := json.Marshal(req)
 	if err != nil {
 		return 0, fmt.Errorf("failed to marshal request: %w", err)
@@ -48,7 +43,7 @@ func (c *WayFinderClient) WayFinderInsertOne(req WayFinderPutRequest) (int64, er
 }
 
 // WayFinderGetOne sends a GET request to retrieve a WayFinder item by bucket/key
-func (c *WayFinderClient) WayFinderGetOne(req WayFinderGetOneRequest) (*WayFinderItem, error) {
+func (c *WayFinderClient) WayFinderGetOne(req bullet_interface.WayFinderGetOneRequest) (*bullet_interface.WayFinderItem, error) {
 	bodyBytes, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
@@ -63,7 +58,7 @@ func (c *WayFinderClient) WayFinderGetOne(req WayFinderGetOneRequest) (*WayFinde
 	}
 
 	var result struct {
-		Item WayFinderItem `json:"item"`
+		Item bullet_interface.WayFinderItem `json:"item"`
 	}
 	if err := json.Unmarshal(resp, &result); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w, message body was '%s'", err, string(resp))
@@ -71,7 +66,7 @@ func (c *WayFinderClient) WayFinderGetOne(req WayFinderGetOneRequest) (*WayFinde
 	return &result.Item, nil
 }
 
-func (c *WayFinderClient) WayFinderQueryByPrefix(req WayFinderPrefixQueryRequest) ([]WayFinderQueryItem, error) {
+func (c *WayFinderClient) WayFinderQueryByPrefix(req bullet_interface.WayFinderPrefixQueryRequest) ([]bullet_interface.WayFinderQueryItem, error) {
 	bodyBytes, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
@@ -85,7 +80,7 @@ func (c *WayFinderClient) WayFinderQueryByPrefix(req WayFinderPrefixQueryRequest
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
 	var result struct {
-		Items []WayFinderQueryItem `json:"items"`
+		Items []bullet_interface.WayFinderQueryItem `json:"items"`
 	}
 	if err := json.Unmarshal(resp, &result); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w, message body was '%s'", err, string(resp))

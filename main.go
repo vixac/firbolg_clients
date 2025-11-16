@@ -3,14 +3,14 @@ package main
 import (
 	"fmt"
 
-	bullet "github.com/vixac/firbolg_clients/bullet/wayfinder"
-	wayfinder "github.com/vixac/firbolg_clients/bullet/wayfinder"
+	"github.com/vixac/firbolg_clients/bullet/bullet_interface"
+	rest_bullet "github.com/vixac/firbolg_clients/bullet/rest_bullet/wayfinder"
 )
 
 func main() {
 	//compilation check for conformance
-	var wayfinderClient bullet.WayFinderClientInterface
-	wayfinderClient = wayfinder.NewWayFinderClient(
+	var wayfinderClient bullet_interface.WayFinderClientInterface
+	wayfinderClient = rest_bullet.NewWayFinderClient(
 		"baseUrl",
 		12345,
 	)
