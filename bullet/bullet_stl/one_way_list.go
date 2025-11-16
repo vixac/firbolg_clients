@@ -2,6 +2,7 @@ package bullet_stl
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	bullet_interface "github.com/vixac/firbolg_clients/bullet/bullet_interface"
@@ -12,8 +13,8 @@ A bullet agnostic data structure which allows insertions of subject object (key,
 */
 type OneWayList interface {
 	Upsert(s ListSubject, o ListObject) error
-	DeleteViaSub(s ListSubject) error
-	//DeletePair(s ListSubject, o ListObject) error dont think we need it in the end.
+	DeletePair(s ListSubject, o ListObject) error
+	DeleteBySub(s ListSubject) error
 	GetObject(s ListSubject) (*ListObject, error)
 }
 
@@ -53,7 +54,8 @@ func (l *BulletOneWayList) Upsert(s ListSubject, o ListObject) error {
 	}
 	//delete the key if it exists.
 	if existing != nil {
-		err := l.DeleteViaSub(s)
+		fmt.Printf("VX: DELETEING %+v \n", s)
+		err := l.DeletePair(s, *existing)
 		if err != nil {
 			return err
 		}
@@ -63,20 +65,32 @@ func (l *BulletOneWayList) Upsert(s ListSubject, o ListObject) error {
 	return l.TrackStore.TrackInsertOne(l.BucketId, key, 0, nil, nil)
 }
 
+func (l *BulletOneWayList) DeleteBySub(s ListSubject) error {
+	existing, err := l.GetObject(s)
+	if err != nil {
+		return err
+	}
+	if existing != nil {
+		return l.DeletePair(s, *existing)
+	}
+	//nothing to delete.
+	return nil
+}
+
 // VX:TODO test
-func (l *BulletOneWayList) DeleteViaSub(s ListSubject) error {
-	key := buildKey(l.ListName, l.KeySeparator, s.Value, nil)
+func (l *BulletOneWayList) DeletePair(s ListSubject, o ListObject) error {
+	key := buildKey(l.ListName, l.KeySeparator, s.Value, &o.Value)
 	var values []bullet_interface.TrackDeleteValue
 	values = append(values, bullet_interface.TrackDeleteValue{
 		BucketID: l.BucketId,
 		Key:      key,
 	})
+	fmt.Printf("Deleting item %d, %s, ", l.BucketId, key)
 	return l.TrackStore.TrackDeleteMany(bullet_interface.TrackDeleteMany{
 		Values: values,
 	})
 }
 
-// VX:TODO test
 func (l *BulletOneWayList) GetObject(s ListSubject) (*ListObject, error) {
 	prefixKey := buildKey(l.ListName, l.KeySeparator, s.Value, nil)
 
@@ -87,6 +101,9 @@ func (l *BulletOneWayList) GetObject(s ListSubject) (*ListObject, error) {
 	res, err := l.TrackStore.TrackGetManyByPrefix(req)
 	if err != nil {
 		return nil, err
+	}
+	if res == nil {
+		return nil, nil
 	}
 	if len(res.Values) != 1 {
 		return nil, errors.New("missing bucket")

@@ -55,11 +55,11 @@ func (l *TwoWayListImpl) DeleteViaSub(s ListSubject) error {
 	if err != nil {
 		return err
 	}
-	err = l.ForwardList.DeleteViaSub(s)
+	err = l.ForwardList.DeleteBySub(s)
 	if err != nil {
 		return err
 	}
-	return l.BackwardList.DeleteViaSub(o.Invert())
+	return l.BackwardList.DeleteBySub(o.Invert())
 }
 
 // VX:TODO test
