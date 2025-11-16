@@ -10,6 +10,8 @@ import (
 type Bucket struct {
 	id int32
 }
+
+// VX:TODO not used
 type WayFinderMockClient struct {
 	Data map[Bucket]map[string]bullet_interface.WayFinderItem
 	mu   sync.Mutex
