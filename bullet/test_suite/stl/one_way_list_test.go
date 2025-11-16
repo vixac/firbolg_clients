@@ -10,7 +10,7 @@ import (
 	"github.com/vixac/firbolg_clients/bullet/local_bullet"
 )
 
-func buildClient() bullet_interface.BulletClientInterface {
+func BuildTestClient() bullet_interface.BulletClientInterface {
 	store := ram.NewRamStore()
 	localClient := &local_bullet.LocalBullet{
 		Store: store,
@@ -20,7 +20,7 @@ func buildClient() bullet_interface.BulletClientInterface {
 }
 
 func TestInsertAndDelete(t *testing.T) {
-	list, err := bullet_stl.NewBulletOneWayList(buildClient(), 42, "test_one_way_list", ":")
+	list, err := bullet_stl.NewBulletOneWayList(BuildTestClient(), 42, "test_one_way_list", ":")
 	assert.NoError(t, err)
 
 	subject := bullet_stl.ListSubject{Value: "subject"}
@@ -40,7 +40,7 @@ func TestInsertAndDelete(t *testing.T) {
 
 }
 func TestOneWayListPersonAge(t *testing.T) {
-	ageList, err := bullet_stl.NewBulletOneWayList(buildClient(), 42, "test_one_way_list", ":")
+	ageList, err := bullet_stl.NewBulletOneWayList(BuildTestClient(), 42, "test_one_way_list", ":")
 	assert.NoError(t, err)
 
 	alice := bullet_stl.ListSubject{Value: "alice"}
@@ -62,7 +62,7 @@ func TestOneWayListPersonAge(t *testing.T) {
 	assert.Equal(t, bobsAge.Value, "20")
 
 	//now add alice and carol
-	err = ageList.Upsert(alice, bullet_stl.ListObject{Value: "30"})
+	err = ageList.Upsert(alice, bullet_stl.ListObject{Value: "20"})
 	assert.NoError(t, err)
 	err = ageList.Upsert(carol, bullet_stl.ListObject{Value: "40"})
 	assert.NoError(t, err)
@@ -75,7 +75,7 @@ func TestOneWayListPersonAge(t *testing.T) {
 	//add alice and carol
 	aliceAge, err := ageList.GetObject(alice)
 	assert.NoError(t, err)
-	assert.Equal(t, aliceAge.Value, "30")
+	assert.Equal(t, aliceAge.Value, "20")
 
 	carolAge, err := ageList.GetObject(carol)
 	assert.NoError(t, err)
@@ -92,5 +92,10 @@ func TestOneWayListPersonAge(t *testing.T) {
 	bobsAge, err = ageList.GetObject(bob)
 	assert.NoError(t, err)
 	assert.Equal(t, bobsAge.Value, "21")
+
+	//confirm alices age didn't change with bobs age
+	aliceAge, err = ageList.GetObject(alice)
+	assert.NoError(t, err)
+	assert.Equal(t, aliceAge.Value, "20")
 
 }
