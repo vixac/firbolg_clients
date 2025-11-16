@@ -1,22 +1,18 @@
-package bullet
+package rest_bullet
 
 import (
 	"encoding/json"
 	"fmt"
 
-	util "github.com/vixac/firbolg_clients/util"
+	"github.com/vixac/firbolg_clients/bullet/bullet_interface"
+	util "github.com/vixac/firbolg_clients/bullet/util"
 )
 
-// VX:TODO This is missing many depot bullet calls.
-type DepotClientInterface interface {
-	DepotInsertOne(req DepotRequest) error
-	DepotGetMany(req DepotGetManyRequest) (*DepotGetManyResponse, error)
-}
 type DepotClient struct {
 	*util.FirbolgClient
 }
 
-func (c *DepotClient) DepotInsertOne(req DepotRequest) error {
+func (c *DepotClient) DepotInsertOne(req bullet_interface.DepotRequest) error {
 	bodyBytes, err := json.Marshal(req)
 	if err != nil {
 		return fmt.Errorf("failed to marshal request: %w", err)
@@ -28,7 +24,7 @@ func (c *DepotClient) DepotInsertOne(req DepotRequest) error {
 	return nil
 }
 
-func (c *DepotClient) DepotGetMany(req DepotGetManyRequest) (*DepotGetManyResponse, error) {
+func (c *DepotClient) DepotGetMany(req bullet_interface.DepotGetManyRequest) (*bullet_interface.DepotGetManyResponse, error) {
 	bodyBytes, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
@@ -40,7 +36,7 @@ func (c *DepotClient) DepotGetMany(req DepotGetManyRequest) (*DepotGetManyRespon
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
 	// unmarshal
-	var result DepotGetManyResponse
+	var result bullet_interface.DepotGetManyResponse
 	if err := json.Unmarshal(resp, &result); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w, message body was '%s'", err, string(resp))
 	}

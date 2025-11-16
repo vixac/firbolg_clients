@@ -1,4 +1,4 @@
-package bullet
+package bullet_interface
 
 type WayFinderQueryItem struct {
 	Key     string   `json:"key"`

@@ -1,4 +1,4 @@
-package bullet
+package bullet_interface
 
 type DepotRequest struct {
 	Key   int64  `json:"key,string"`

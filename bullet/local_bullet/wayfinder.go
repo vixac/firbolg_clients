@@ -2,12 +2,12 @@ package localbullet
 
 import (
 	"github.com/vixac/bullet/model"
-	wayfinder "github.com/vixac/firbolg_clients/bullet/wayfinder"
+	bullet_interface "github.com/vixac/firbolg_clients/bullet/bullet_interface"
 )
 
 // store provides a type which has an equivialent in firbolg clients.s
-func bulletQueryItemToClient(model model.WayFinderQueryItem) wayfinder.WayFinderQueryItem {
-	return wayfinder.WayFinderQueryItem{
+func bulletQueryItemToClient(model model.WayFinderQueryItem) bullet_interface.WayFinderQueryItem {
+	return bullet_interface.WayFinderQueryItem{
 		Key:     model.Key,
 		ItemId:  model.ItemId,
 		Tag:     model.Tag,
@@ -16,11 +16,11 @@ func bulletQueryItemToClient(model model.WayFinderQueryItem) wayfinder.WayFinder
 	}
 }
 
-func bulletItemToClient(model *model.WayFinderGetResponse) *wayfinder.WayFinderItem {
+func bulletItemToClient(model *model.WayFinderGetResponse) *bullet_interface.WayFinderItem {
 	if model == nil {
 		return nil
 	}
-	return &wayfinder.WayFinderItem{
+	return &bullet_interface.WayFinderItem{
 		Item:    model.ItemId,
 		Tag:     model.Tag,
 		Metric:  model.Metric,
@@ -28,23 +28,23 @@ func bulletItemToClient(model *model.WayFinderGetResponse) *wayfinder.WayFinderI
 	}
 }
 
-func (l *LocalBullet) WayFinderInsertOne(req wayfinder.WayFinderPutRequest) (int64, error) {
+func (l *LocalBullet) WayFinderInsertOne(req bullet_interface.WayFinderPutRequest) (int64, error) {
 	return l.store.WayFinderPut(l.appId, req.BucketId, req.Key, req.Payload, req.Tag, req.Metric)
 }
-func (l *LocalBullet) WayFinderQueryByPrefix(req wayfinder.WayFinderPrefixQueryRequest) ([]wayfinder.WayFinderQueryItem, error) {
+func (l *LocalBullet) WayFinderQueryByPrefix(req bullet_interface.WayFinderPrefixQueryRequest) ([]bullet_interface.WayFinderQueryItem, error) {
 	res, err := l.store.WayFinderGetByPrefix(l.appId, req.BucketId, req.Prefix, req.Tags, req.Metric, req.MetricIsGt)
 	if err != nil {
 		return nil, err
 	}
 
-	var mappedRes []wayfinder.WayFinderQueryItem
+	var mappedRes []bullet_interface.WayFinderQueryItem
 	for _, v := range res {
 		mappedRes = append(mappedRes, bulletQueryItemToClient(v))
 	}
 	return mappedRes, nil
 }
 
-func (l *LocalBullet) WayFinderGetOne(req wayfinder.WayFinderGetOneRequest) (*wayfinder.WayFinderItem, error) {
+func (l *LocalBullet) WayFinderGetOne(req bullet_interface.WayFinderGetOneRequest) (*bullet_interface.WayFinderItem, error) {
 	res, err := l.store.WayFinderGetOne(l.appId, req.BucketId, req.Key)
 	if err != nil {
 		return nil, err

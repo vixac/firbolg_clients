@@ -1,7 +1,7 @@
 package bullet_stl
 
 import (
-	track "github.com/vixac/firbolg_clients/bullet/track"
+	bullet_client "github.com/vixac/firbolg_clients/bullet/bullet_interface"
 )
 
 /*
@@ -24,7 +24,7 @@ type TwoWayListImpl struct {
 }
 
 // just a convenience, becuase TwoWay is bullet agnostic.
-func NewBulletTwoWayList(store track.TrackClientInterface, bucketId int32, listName string, forwardSeparator string, backwardSeparator string) (*TwoWayListImpl, error) {
+func NewBulletTwoWayList(store bullet_client.TrackClientInterface, bucketId int32, listName string, forwardSeparator string, backwardSeparator string) (*TwoWayListImpl, error) {
 	forwardList, err := NewBulletOneWayList(store, bucketId, listName, forwardSeparator)
 	if err != nil {
 		return nil, err

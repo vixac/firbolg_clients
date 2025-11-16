@@ -1,4 +1,4 @@
-package bullet
+package rest_bullet
 
 import (
 	"net/http"
@@ -7,7 +7,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	util "github.com/vixac/firbolg_clients/util"
+
+	bullet_interface "github.com/vixac/firbolg_clients/bullet/bullet_interface"
+	util "github.com/vixac/firbolg_clients/bullet/util"
 )
 
 func loadTestData(t *testing.T, filename string) []byte {
@@ -32,7 +34,7 @@ func TestWayFinderClient_WayFinderInsertOne(t *testing.T) {
 	client := WayFinderClient{
 		Client: c,
 	}
-	id, err := client.WayFinderInsertOne(WayFinderPutRequest{
+	id, err := client.WayFinderInsertOne(bullet_interface.WayFinderPutRequest{
 		BucketId: 1,
 		Key:      "foo",
 		Payload:  "bar",
@@ -56,7 +58,7 @@ func TestWayFinderClient_WayFinderQueryByPrefix(t *testing.T) {
 		Client: c,
 	}
 
-	items, err := client.WayFinderQueryByPrefix(WayFinderPrefixQueryRequest{
+	items, err := client.WayFinderQueryByPrefix(bullet_interface.WayFinderPrefixQueryRequest{
 		BucketId:   1,
 		Prefix:     "foo",
 		MetricIsGt: false,
@@ -84,7 +86,7 @@ func TestWayFinderClient_WayFinderGetOne(t *testing.T) {
 		Client: c,
 	}
 
-	item, err := client.WayFinderGetOne(WayFinderGetOneRequest{
+	item, err := client.WayFinderGetOne(bullet_interface.WayFinderGetOneRequest{
 		BucketId: 1,
 		Key:      "foo",
 	})

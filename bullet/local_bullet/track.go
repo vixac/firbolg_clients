@@ -3,11 +3,11 @@ package localbullet
 import (
 	"fmt"
 
-	track "github.com/vixac/firbolg_clients/bullet/track"
+	bullet "github.com/vixac/firbolg_clients/bullet/bullet_interface"
 )
 
 // TrackGetMany retrieves multiple keys from multiple buckets
-func (l *LocalBullet) TrackGetMany(req track.TrackGetManyRequest) (*track.TrackGetManyResponse, error) {
+func (l *LocalBullet) TrackGetMany(req bullet.TrackGetManyRequest) (*bullet.TrackGetManyResponse, error) {
 	// build map[int32][]string for TrackStore interface
 	requestMap := make(map[int32][]string)
 	for _, bucket := range req.Buckets {
@@ -21,13 +21,13 @@ func (l *LocalBullet) TrackGetMany(req track.TrackGetManyRequest) (*track.TrackG
 	}
 
 	// convert to client response
-	values := make(map[int32]map[string]track.TrackValue)
+	values := make(map[int32]map[string]bullet.TrackValue)
 	missing := make(map[string][]string)
 
 	for bucketID, kvMap := range found {
-		values[bucketID] = make(map[string]track.TrackValue)
+		values[bucketID] = make(map[string]bullet.TrackValue)
 		for k, v := range kvMap {
-			values[bucketID][k] = track.TrackValue{
+			values[bucketID][k] = bullet.TrackValue{
 				Value:  v.Value,
 				Tag:    v.Tag,
 				Metric: v.Metric,
@@ -39,7 +39,7 @@ func (l *LocalBullet) TrackGetMany(req track.TrackGetManyRequest) (*track.TrackG
 		missing[fmt.Sprintf("%d", bucketID)] = keys
 	}
 
-	return &track.TrackGetManyResponse{
+	return &bullet.TrackGetManyResponse{
 		Values:  values,
 		Missing: missing,
 	}, nil
@@ -51,7 +51,7 @@ func (l *LocalBullet) TrackInsertOne(bucketID int32, key string, value int64, ta
 }
 
 // TrackDeleteMany deletes multiple keys across buckets
-func (l *LocalBullet) TrackDeleteMany(req track.TrackDeleteMany) error {
+func (l *LocalBullet) TrackDeleteMany(req bullet.TrackDeleteMany) error {
 	for _, item := range req.Values {
 		if err := l.store.TrackDelete(l.appId, item.BucketID, item.Key); err != nil {
 			return err
@@ -61,7 +61,7 @@ func (l *LocalBullet) TrackDeleteMany(req track.TrackDeleteMany) error {
 }
 
 // TrackGetManyByPrefix queries by prefix, optionally filtering by tags and metric
-func (l *LocalBullet) TrackGetManyByPrefix(req track.TrackGetItemsByPrefixRequest) (*track.TrackGetManyResponse, error) {
+func (l *LocalBullet) TrackGetManyByPrefix(req bullet.TrackGetItemsByPrefixRequest) (*bullet.TrackGetManyResponse, error) {
 	var metricValue *float64
 	var metricIsGt bool
 
@@ -75,18 +75,18 @@ func (l *LocalBullet) TrackGetManyByPrefix(req track.TrackGetItemsByPrefixReques
 		return nil, err
 	}
 
-	values := make(map[int32]map[string]track.TrackValue)
-	values[req.BucketID] = make(map[string]track.TrackValue)
+	values := make(map[int32]map[string]bullet.TrackValue)
+	values[req.BucketID] = make(map[string]bullet.TrackValue)
 
 	for _, item := range items {
-		values[req.BucketID][item.Key] = track.TrackValue{
+		values[req.BucketID][item.Key] = bullet.TrackValue{
 			Value:  item.Value.Value,
 			Tag:    item.Value.Tag,
 			Metric: item.Value.Metric,
 		}
 	}
 
-	return &track.TrackGetManyResponse{
+	return &bullet.TrackGetManyResponse{
 		Values:  values,
 		Missing: map[string][]string{}, // can't know missing in prefix query
 	}, nil

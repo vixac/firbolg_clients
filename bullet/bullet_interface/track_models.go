@@ -1,4 +1,4 @@
-package bullet
+package bullet_interface
 
 type TrackRequest struct {
 	BucketID int32    `json:"bucketId"`

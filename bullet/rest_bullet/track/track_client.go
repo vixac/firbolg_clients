@@ -1,4 +1,4 @@
-package bullet
+package rest_bullet
 
 import (
 	"encoding/json"
@@ -6,29 +6,23 @@ import (
 	"fmt"
 	"strconv"
 
-	util "github.com/vixac/firbolg_clients/util"
+	"github.com/vixac/firbolg_clients/bullet/bullet_interface"
+	util "github.com/vixac/firbolg_clients/bullet/util"
 )
-
-type TrackClientInterface interface {
-	TrackGetMany(req TrackGetManyRequest) (*TrackGetManyResponse, error)
-	TrackInsertOne(bucketID int32, key string, value int, tag *int64, metric *float64) error
-	TrackDeleteMany(req TrackDeleteMany) error
-	TrackGetManyByPrefix(req TrackGetItemsByPrefixRequest) (*TrackGetManyResponse, error)
-}
 
 type TrackClient struct {
 	*util.FirbolgClient
 }
 
-func (c *TrackClient) TrackDeleteMany(req TrackDeleteMany) error {
+func (c *TrackClient) TrackDeleteMany(req bullet_interface.TrackDeleteMany) error {
 	return errors.New("not impl")
 }
 
-func (c *TrackClient) TrackGetManyByPrefix(req TrackGetItemsByPrefixRequest) (*TrackGetManyResponse, error) {
+func (c *TrackClient) TrackGetManyByPrefix(req bullet_interface.TrackGetItemsByPrefixRequest) (*bullet_interface.TrackGetManyResponse, error) {
 	return nil, errors.New("not impl")
 }
 
-func (c *TrackClient) TrackGetMany(req TrackGetManyRequest) (*TrackGetManyResponse, error) {
+func (c *TrackClient) TrackGetMany(req bullet_interface.TrackGetManyRequest) (*bullet_interface.TrackGetManyResponse, error) {
 
 	// marshal request body
 	bodyBytes, err := json.Marshal(req)
@@ -42,7 +36,7 @@ func (c *TrackClient) TrackGetMany(req TrackGetManyRequest) (*TrackGetManyRespon
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
 	// unmarshal
-	var result TrackGetManyResponse
+	var result bullet_interface.TrackGetManyResponse
 	if err := json.Unmarshal(resp, &result); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w, message body was '%s'", err, string(resp))
 	}
