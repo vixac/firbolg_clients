@@ -1,4 +1,4 @@
-package localbullet
+package local_bullet
 
 import (
 	"github.com/vixac/bullet/model"

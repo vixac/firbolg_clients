@@ -1,4 +1,4 @@
-package localbullet
+package local_bullet
 
 import (
 	"github.com/vixac/firbolg_clients/bullet/bullet_interface"

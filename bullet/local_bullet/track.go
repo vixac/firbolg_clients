@@ -1,8 +1,9 @@
-package localbullet
+package local_bullet
 
 import (
 	"fmt"
 
+	"github.com/vixac/bullet/model"
 	"github.com/vixac/firbolg_clients/bullet/bullet_interface"
 )
 
@@ -52,12 +53,16 @@ func (l *LocalBullet) TrackInsertOne(bucketID int32, key string, value int64, ta
 
 // TrackDeleteMany deletes multiple keys across buckets
 func (l *LocalBullet) TrackDeleteMany(req bullet_interface.TrackDeleteMany) error {
+
+	var deleteItems []model.TrackBucketKeyPair
 	for _, item := range req.Values {
-		if err := l.Store.TrackDelete(l.AppId, item.BucketID, item.Key); err != nil {
-			return err
-		}
+		deleteItems = append(deleteItems, model.TrackBucketKeyPair{
+			BucketID: item.BucketID,
+			Key:      item.Key,
+		})
+
 	}
-	return nil
+	return l.Store.TrackDeleteMany(l.AppId, deleteItems)
 }
 
 // TrackGetManyByPrefix queries by prefix, optionally filtering by tags and metric
@@ -74,7 +79,9 @@ func (l *LocalBullet) TrackGetManyByPrefix(req bullet_interface.TrackGetItemsByP
 	if err != nil {
 		return nil, err
 	}
-
+	if len(items) == 0 {
+		return nil, nil
+	}
 	values := make(map[int32]map[string]bullet_interface.TrackValue)
 	values[req.BucketID] = make(map[string]bullet_interface.TrackValue)
 

@@ -1,4 +1,4 @@
-package bullet
+package test_suite
 
 import (
 	"testing"
@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	ram "github.com/vixac/bullet/store/ram"
 	"github.com/vixac/firbolg_clients/bullet/bullet_interface"
-	localbullet "github.com/vixac/firbolg_clients/bullet/local_bullet"
+	local_bullet "github.com/vixac/firbolg_clients/bullet/local_bullet"
 )
 
 // the goal here is to test that both clients behave in the same way.
@@ -16,7 +16,7 @@ import (
 
 func buildClients() []bullet_interface.BulletClientInterface {
 	store := ram.NewRamStore()
-	localClient := &localbullet.LocalBullet{
+	localClient := &local_bullet.LocalBullet{
 		Store: store,
 		AppId: 12,
 	}

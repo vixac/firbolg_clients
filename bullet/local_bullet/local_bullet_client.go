@@ -1,4 +1,4 @@
-package localbullet
+package local_bullet
 
 import (
 	store "github.com/vixac/bullet/store/store_interface"
