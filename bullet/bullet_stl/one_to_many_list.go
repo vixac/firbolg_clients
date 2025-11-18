@@ -19,7 +19,7 @@ type PairFetchResponse struct {
 	Pairs []ManyToManyPair
 }
 
-type Mesh interface {
+type ForwardMesh interface {
 	AppendPairs(pairs []ManyToManyPair) error
 	RemovePairs(pairs []ManyToManyPair) error
 	RemoveSubject(subject ListSubject) error
@@ -28,16 +28,16 @@ type Mesh interface {
 
 //I *think* this can be handled with twoWay lists? not sure. not.
 
-type BulletMesh struct {
+type BulletForwardMesh struct {
 	TrackStore bullet.TrackClientInterface
 	BucketId   int32
 	MeshName   string
 	Separator  string
 }
 
-func NewBulletMesh(store bullet.TrackClientInterface, bucketId int32, meshName string, separator string) (*BulletMesh, error) {
+func NewBulletForwardMesh(store bullet.TrackClientInterface, bucketId int32, meshName string, separator string) (ForwardMesh, error) {
 	//VX:TODO check meshName and upward and downward are all valid wrt eachother
-	return &BulletMesh{
+	return &BulletForwardMesh{
 		TrackStore: store,
 		BucketId:   bucketId,
 		MeshName:   meshName,
@@ -45,7 +45,7 @@ func NewBulletMesh(store bullet.TrackClientInterface, bucketId int32, meshName s
 	}, nil
 }
 
-func (b *BulletMesh) AppendPairs(pairs []ManyToManyPair) error {
+func (b *BulletForwardMesh) AppendPairs(pairs []ManyToManyPair) error {
 
 	//VX:Note can I not bulk insert? oh well.
 	for _, pair := range pairs {
@@ -60,7 +60,7 @@ func (b *BulletMesh) AppendPairs(pairs []ManyToManyPair) error {
 	}
 	return nil
 }
-func (b *BulletMesh) RemovePairs(pairs []ManyToManyPair) error {
+func (b *BulletForwardMesh) RemovePairs(pairs []ManyToManyPair) error {
 	var values []bullet.TrackDeleteValue
 	for _, pair := range pairs {
 		objectValue := pair.Object.Value
@@ -77,7 +77,7 @@ func (b *BulletMesh) RemovePairs(pairs []ManyToManyPair) error {
 	return b.TrackStore.TrackDeleteMany(req)
 }
 
-func (b *BulletMesh) RemoveSubject(subject ListSubject) error {
+func (b *BulletForwardMesh) RemoveSubject(subject ListSubject) error {
 	allPairs, err := b.AllPairsForSubject(subject)
 	if err != nil {
 		return nil
@@ -85,7 +85,7 @@ func (b *BulletMesh) RemoveSubject(subject ListSubject) error {
 	return b.RemovePairs(allPairs.Pairs)
 }
 
-func (b *BulletMesh) AllPairsForSubject(subject ListSubject) (*PairFetchResponse, error) {
+func (b *BulletForwardMesh) AllPairsForSubject(subject ListSubject) (*PairFetchResponse, error) {
 	prefixKey := buildKey(b.MeshName, b.Separator, subject.Value, nil)
 	req := bullet.TrackGetItemsByPrefixRequest{
 		BucketID: b.BucketId,

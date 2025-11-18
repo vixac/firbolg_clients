@@ -8,7 +8,7 @@ import (
 )
 
 func TestOneToManyInsertAndDelete(t *testing.T) {
-	mesh, err := bullet_stl.NewBulletMesh(BuildTestClient(), 42, "test_mesh", ":")
+	mesh, err := bullet_stl.NewBulletForwardMesh(BuildTestClient(), 42, "test_mesh", ":")
 	assert.NoError(t, err)
 
 	uk := bullet_stl.ListSubject{Value: "uk"}
