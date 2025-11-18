@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/vixac/firbolg_clients/bullet/bullet_stl"
+	bullet_stl "github.com/vixac/firbolg_clients/bullet/bullet_stl/containers"
 )
 
 func TestOneToManyInsertAndDelete(t *testing.T) {
