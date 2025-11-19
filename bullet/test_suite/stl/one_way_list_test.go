@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/vixac/bullet/store/ram"
 	"github.com/vixac/firbolg_clients/bullet/bullet_interface"
-	"github.com/vixac/firbolg_clients/bullet/bullet_stl"
+	bullet_stl "github.com/vixac/firbolg_clients/bullet/bullet_stl/containers"
 	"github.com/vixac/firbolg_clients/bullet/local_bullet"
 )
 

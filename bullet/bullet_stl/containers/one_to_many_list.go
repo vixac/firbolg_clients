@@ -2,7 +2,6 @@ package bullet_stl
 
 import (
 	"errors"
-	"fmt"
 	"sort"
 	"strings"
 
@@ -95,7 +94,7 @@ func (b *BulletForwardMesh) AllPairsForSubject(subject ListSubject) (*PairFetchR
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("VX:Fetch res is %+v\n", res)
+	//fmt.Printf("VX:Fetch res is %+v\n", res)
 	if err != nil {
 		return nil, err
 	}

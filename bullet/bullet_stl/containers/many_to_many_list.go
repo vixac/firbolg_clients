@@ -2,7 +2,6 @@ package bullet_stl
 
 import (
 	"errors"
-	"fmt"
 	"sort"
 	"strings"
 
@@ -111,7 +110,7 @@ func (b *BulletMesh) AllPairsForObject(object ListObject) (*PairFetchResponse, e
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("VX:Fetch res is %+v\n", res)
+	//fmt.Printf("VX:Fetch res is %+v\n", res)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +164,7 @@ func (b *BulletMesh) AllPairsForSubject(subject ListSubject) (*PairFetchResponse
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("VX:Fetch res is %+v\n", res)
+	//fmt.Printf("VX:Fetch res is %+v\n", res)
 	if res == nil {
 		return nil, nil
 	}
