@@ -98,7 +98,7 @@ func (l *BulletOneWayList) GetObject(s ListSubject) (*ListObject, error) {
 		Prefix:   prefixKey,
 	}
 	res, err := l.TrackStore.TrackGetManyByPrefix(req)
-	fmt.Printf("VX:Fetch res is %+v\n", res)
+	//fmt.Printf("VX:Fetch res is %+v\n", res)
 	if err != nil {
 		return nil, err
 	}
