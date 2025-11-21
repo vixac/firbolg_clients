@@ -37,8 +37,14 @@ func NewBulletOneWayList(store bullet_interface.TrackClientInterface, bucketId i
 }
 
 // generates the key name. If the object is provided, is it appended
-func buildKey(listName string, separator string, subject string, object *string) string {
-	var key = listName + separator + subject + separator //note the separator on the end even if theres no object "a:b:c" or "a:b:"
+func buildKey(listName string, separator string, subject string, object *string, subjectIsActuallyAPrefix bool) string {
+	var key = listName + separator + subject
+
+	//how this works is that the separator at the end acts as a delimter of the end of the key, as in subject:object
+	//so if you're looking for all keys that use "sub", you don't want to look for "sub:"
+	if !subjectIsActuallyAPrefix {
+		key += separator
+	}
 	if object != nil {
 		key = key + *object
 	}
@@ -60,7 +66,7 @@ func (l *BulletOneWayList) Upsert(s ListSubject, o ListObject) error {
 		}
 	}
 
-	key := buildKey(l.ListName, l.KeySeparator, s.Value, &o.Value)
+	key := buildKey(l.ListName, l.KeySeparator, s.Value, &o.Value, false)
 	fmt.Printf("Insert happeneing now under %s \n", key)
 	return l.TrackStore.TrackInsertOne(l.BucketId, key, 0, nil, nil)
 }
@@ -78,7 +84,7 @@ func (l *BulletOneWayList) DeleteBySub(s ListSubject) error {
 }
 
 func (l *BulletOneWayList) DeletePair(s ListSubject, o ListObject) error {
-	key := buildKey(l.ListName, l.KeySeparator, s.Value, &o.Value)
+	key := buildKey(l.ListName, l.KeySeparator, s.Value, &o.Value, false)
 	var values []bullet_interface.TrackDeleteValue
 	values = append(values, bullet_interface.TrackDeleteValue{
 		BucketID: l.BucketId,
@@ -91,7 +97,7 @@ func (l *BulletOneWayList) DeletePair(s ListSubject, o ListObject) error {
 }
 
 func (l *BulletOneWayList) GetObject(s ListSubject) (*ListObject, error) {
-	prefixKey := buildKey(l.ListName, l.KeySeparator, s.Value, nil)
+	prefixKey := buildKey(l.ListName, l.KeySeparator, s.Value, nil, false)
 	fmt.Printf("VX: fetching %s\n", prefixKey)
 	req := bullet_interface.TrackGetItemsByPrefixRequest{
 		BucketID: l.BucketId,
@@ -123,7 +129,7 @@ func (l *BulletOneWayList) GetObject(s ListSubject) (*ListObject, error) {
 		return nil, errors.New("missing item in bucket")
 	}
 	if len(itemsByBucket) > 1 {
-		return nil, errors.New("This two way store got more than 1 item for lookup")
+		return nil, errors.New("this two way store got more than 1 item for lookup")
 	}
 	resultKeyIncludingPrefix := itemsInBucket[0]
 	object, found := strings.CutPrefix(resultKeyIncludingPrefix, prefixKey)

@@ -17,7 +17,7 @@ type Mesh interface {
 	RemovePairs(pairs []ManyToManyPair) error
 	RemoveSubject(subject ListSubject) error
 	RemoveObject(object ListObject) error
-	AllPairsForSubject(subject ListSubject) (*PairFetchResponse, error)
+	AllPairsForSubject(subject ListSubject, subjectIsActuallyAPrefix bool) (*PairFetchResponse, error)
 	AllPairsForObject(object ListObject) (*PairFetchResponse, error)
 }
 
@@ -44,8 +44,8 @@ func (b *BulletMesh) AppendPairs(pairs []ManyToManyPair) error {
 	//VX:Note can I not bulk insert? oh well.
 	for _, pair := range pairs {
 		objectValue := pair.Object.Value
-		forwardKey := buildKey(b.MeshName, b.ForwardSeparator, pair.Subject.Value, &objectValue)
-		backwardKey := buildKey(b.MeshName, b.BackwardSeparator, pair.Object.Value, &pair.Subject.Value)
+		forwardKey := buildKey(b.MeshName, b.ForwardSeparator, pair.Subject.Value, &objectValue, false)
+		backwardKey := buildKey(b.MeshName, b.BackwardSeparator, pair.Object.Value, &pair.Subject.Value, false)
 		floatMetric := float64(pair.Rank)
 		err := b.TrackStore.TrackInsertOne(b.BucketId, forwardKey, 0, nil, &floatMetric)
 		if err != nil {
@@ -73,12 +73,12 @@ func (b *BulletMesh) RemovePairs(pairs []ManyToManyPair) error {
 	var values []bullet.TrackDeleteValue
 	for _, pair := range pairs {
 		objectValue := pair.Object.Value
-		forwardKey := buildKey(b.MeshName, b.ForwardSeparator, pair.Subject.Value, &objectValue)
+		forwardKey := buildKey(b.MeshName, b.ForwardSeparator, pair.Subject.Value, &objectValue, false)
 		values = append(values, bullet.TrackDeleteValue{
 			BucketID: b.BucketId,
 			Key:      forwardKey,
 		})
-		backwardKey := buildKey(b.MeshName, b.BackwardSeparator, pair.Object.Value, &pair.Subject.Value)
+		backwardKey := buildKey(b.MeshName, b.BackwardSeparator, pair.Object.Value, &pair.Subject.Value, false)
 		values = append(values, bullet.TrackDeleteValue{
 			BucketID: b.BucketId,
 			Key:      backwardKey,
@@ -92,7 +92,7 @@ func (b *BulletMesh) RemovePairs(pairs []ManyToManyPair) error {
 }
 
 func (b *BulletMesh) RemoveSubject(subject ListSubject) error {
-	allPairs, err := b.AllPairsForSubject(subject)
+	allPairs, err := b.AllPairsForSubject(subject, false)
 	if err != nil {
 		return nil
 	}
@@ -101,7 +101,7 @@ func (b *BulletMesh) RemoveSubject(subject ListSubject) error {
 }
 
 func (b *BulletMesh) AllPairsForObject(object ListObject) (*PairFetchResponse, error) {
-	prefixKey := buildKey(b.MeshName, b.BackwardSeparator, object.Value, nil)
+	prefixKey := buildKey(b.MeshName, b.BackwardSeparator, object.Value, nil, false)
 	req := bullet.TrackGetItemsByPrefixRequest{
 		BucketID: b.BucketId,
 		Prefix:   prefixKey,
@@ -154,8 +154,8 @@ func (b *BulletMesh) AllPairsForObject(object ListObject) (*PairFetchResponse, e
 		Pairs: pairs,
 	}, nil
 }
-func (b *BulletMesh) AllPairsForSubject(subject ListSubject) (*PairFetchResponse, error) {
-	prefixKey := buildKey(b.MeshName, b.ForwardSeparator, subject.Value, nil)
+func (b *BulletMesh) AllPairsForSubject(subject ListSubject, subjectIsActuallyAPrefix bool) (*PairFetchResponse, error) {
+	prefixKey := buildKey(b.MeshName, b.ForwardSeparator, subject.Value, nil, subjectIsActuallyAPrefix)
 	req := bullet.TrackGetItemsByPrefixRequest{
 		BucketID: b.BucketId,
 		Prefix:   prefixKey,

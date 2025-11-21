@@ -46,7 +46,7 @@ func TestManyToManyInsertAndDelete(t *testing.T) {
 	assert.NoError(t, err)
 
 	//fetch uk
-	foundObjects, err := mesh.AllPairsForSubject(english)
+	foundObjects, err := mesh.AllPairsForSubject(english, false)
 
 	assert.NoError(t, err)
 	assert.Equal(t, len(foundObjects.Pairs), 2)
@@ -55,7 +55,7 @@ func TestManyToManyInsertAndDelete(t *testing.T) {
 
 	//	churchillPair := foundObjects.Pairs[0]
 	//fetch france
-	foundObjects, err = mesh.AllPairsForSubject(french)
+	foundObjects, err = mesh.AllPairsForSubject(french, false)
 	assert.NoError(t, err)
 	assert.Equal(t, len(foundObjects.Pairs), 2)
 	assert.Equal(t, foundObjects.Pairs[0].Object.Value, "churchill")
@@ -67,20 +67,20 @@ func TestManyToManyInsertAndDelete(t *testing.T) {
 	assert.NoError(t, err)
 
 	//find english, only newton
-	foundObjects, err = mesh.AllPairsForSubject(english)
+	foundObjects, err = mesh.AllPairsForSubject(english, false)
 	assert.NoError(t, err)
 	assert.Equal(t, len(foundObjects.Pairs), 1)
 	assert.Equal(t, foundObjects.Pairs[0].Object.Value, "newton")
 
 	//find french, only napoleon
-	foundObjects, err = mesh.AllPairsForSubject(french)
+	foundObjects, err = mesh.AllPairsForSubject(french, false)
 	assert.NoError(t, err)
 	assert.Equal(t, len(foundObjects.Pairs), 1)
 	assert.Equal(t, foundObjects.Pairs[0].Object.Value, "napoleon")
 
 	err = mesh.RemoveSubject(italian)
 	assert.NoError(t, err)
-	foundObjects, err = mesh.AllPairsForSubject(italian)
+	foundObjects, err = mesh.AllPairsForSubject(italian, false)
 	assert.NoError(t, err)
 	assert.True(t, foundObjects == nil)
 
@@ -88,7 +88,7 @@ func TestManyToManyInsertAndDelete(t *testing.T) {
 	err = mesh.RemoveSubject(english)
 	assert.NoError(t, err)
 
-	foundObjects, err = mesh.AllPairsForSubject(english)
+	foundObjects, err = mesh.AllPairsForSubject(english, false)
 	assert.NoError(t, err)
 	assert.True(t, foundObjects == nil)
 
