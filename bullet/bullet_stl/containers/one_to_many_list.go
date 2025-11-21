@@ -23,6 +23,7 @@ type ForwardMesh interface {
 	RemovePairs(pairs []ManyToManyPair) error
 	RemoveSubject(subject ListSubject) error
 	AllPairsForSubject(subject ListSubject) (*PairFetchResponse, error)
+	AllPairsForPrefixSubject(subject ListSubject) (*PairFetchResponse, error)
 }
 
 //I *think* this can be handled with twoWay lists? not sure. not.
@@ -49,7 +50,7 @@ func (b *BulletForwardMesh) AppendPairs(pairs []ManyToManyPair) error {
 	//VX:Note can I not bulk insert? oh well.
 	for _, pair := range pairs {
 		objectValue := pair.Object.Value
-		key := buildKey(b.MeshName, b.Separator, pair.Subject.Value, &objectValue)
+		key := buildKey(b.MeshName, b.Separator, pair.Subject.Value, &objectValue, false)
 		floatMetric := float64(pair.Rank)
 		err := b.TrackStore.TrackInsertOne(b.BucketId, key, 0, nil, &floatMetric)
 		if err != nil {
@@ -59,11 +60,12 @@ func (b *BulletForwardMesh) AppendPairs(pairs []ManyToManyPair) error {
 	}
 	return nil
 }
+
 func (b *BulletForwardMesh) RemovePairs(pairs []ManyToManyPair) error {
 	var values []bullet.TrackDeleteValue
 	for _, pair := range pairs {
 		objectValue := pair.Object.Value
-		key := buildKey(b.MeshName, b.Separator, pair.Subject.Value, &objectValue)
+		key := buildKey(b.MeshName, b.Separator, pair.Subject.Value, &objectValue, false)
 		values = append(values, bullet.TrackDeleteValue{
 			BucketID: b.BucketId,
 			Key:      key,
@@ -83,9 +85,15 @@ func (b *BulletForwardMesh) RemoveSubject(subject ListSubject) error {
 	}
 	return b.RemovePairs(allPairs.Pairs)
 }
+func (b *BulletForwardMesh) AllPairsForPrefixSubject(subject ListSubject) (*PairFetchResponse, error) {
+	return b.allPairsForSubjectImpl(subject, true)
+}
 
 func (b *BulletForwardMesh) AllPairsForSubject(subject ListSubject) (*PairFetchResponse, error) {
-	prefixKey := buildKey(b.MeshName, b.Separator, subject.Value, nil)
+	return b.allPairsForSubjectImpl(subject, false)
+}
+func (b *BulletForwardMesh) allPairsForSubjectImpl(subject ListSubject, subjectIsActuallyAPrefix bool) (*PairFetchResponse, error) {
+	prefixKey := buildKey(b.MeshName, b.Separator, subject.Value, nil, subjectIsActuallyAPrefix)
 	req := bullet.TrackGetItemsByPrefixRequest{
 		BucketID: b.BucketId,
 		Prefix:   prefixKey,
@@ -123,16 +131,31 @@ func (b *BulletForwardMesh) AllPairsForSubject(subject ListSubject) (*PairFetchR
 
 	var pairs []ManyToManyPair
 	for _, itemIncludingPrefix := range itemsInBucket {
-		object, found := strings.CutPrefix(itemIncludingPrefix, prefixKey)
-		if !found {
-			return nil, errors.New("invalid result did not contain the prefix")
+
+		split := strings.Split(itemIncludingPrefix, b.Separator)
+		if len(split) != 3 {
+			return nil, errors.New("expected <listname><separator><subject><separator><object")
 		}
+
+		subjectValue := split[1]
+		objectValue := split[2]
+
 		pairs = append(pairs, ManyToManyPair{
-			Subject: subject,
-			Object:  ListObject{Value: object},
+			Subject: ListSubject{Value: subjectValue},
+			Object:  ListObject{Value: objectValue},
 		})
 	}
 
+	sort.Slice(pairs, func(i, j int) bool {
+		a := pairs[i]
+		b := pairs[j]
+
+		if a.Subject.Value == b.Subject.Value {
+			return a.Object.Value < b.Object.Value
+		} else {
+			return a.Subject.Value < b.Subject.Value
+		}
+	})
 	return &PairFetchResponse{
 		Pairs: pairs,
 	}, nil

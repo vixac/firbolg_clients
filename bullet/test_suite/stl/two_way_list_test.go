@@ -56,3 +56,65 @@ func TestTwoWayInsertAndDelete(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, carolNumber == nil)
 }
+
+func TestTwoWayNamesThatEclipse(t *testing.T) {
+	names, err := bullet_stl.NewBulletTwoWayList(BuildTestClient(), 42, "test_two_way", ">", "<")
+	assert.NoError(t, err)
+
+	a := bullet_stl.ListSubject{Value: "a"}
+	ab := bullet_stl.ListSubject{Value: "a:b"}
+	abc := bullet_stl.ListSubject{Value: "a:b:c"}
+	ad := bullet_stl.ListSubject{Value: "a:d"}
+	e := bullet_stl.ListSubject{Value: "e"}
+
+	var pairs []bullet_stl.ManyToManyPair
+	pairs = append(pairs, bullet_stl.ManyToManyPair{
+		Subject: a,
+		Object:  bullet_stl.ListObject{Value: "ant"},
+	})
+	pairs = append(pairs, bullet_stl.ManyToManyPair{
+		Subject: ab,
+		Object:  bullet_stl.ListObject{Value: "abi"},
+	})
+
+	pairs = append(pairs, bullet_stl.ManyToManyPair{
+		Subject: abc,
+		Object:  bullet_stl.ListObject{Value: "abacus"},
+	})
+
+	pairs = append(pairs, bullet_stl.ManyToManyPair{
+		Subject: ad,
+		Object:  bullet_stl.ListObject{Value: "advark"},
+	})
+	pairs = append(pairs, bullet_stl.ManyToManyPair{
+		Subject: e,
+		Object:  bullet_stl.ListObject{Value: "elephant"},
+	})
+
+	//doesnt need to be pairs actually but it works
+	for _, p := range pairs {
+		err := names.Upsert(p.Subject, p.Object)
+		assert.NoError(t, err)
+	}
+
+	//fetch a
+	foundObject, err := names.GetObjectViaSubject(a)
+
+	assert.NoError(t, err)
+	assert.Equal(t, foundObject.Value, "ant")
+
+	foundSubject, err := names.GetOSubjectViaObject(bullet_stl.ListObject{"ant"})
+	assert.NoError(t, err)
+	assert.Equal(t, foundSubject.Value, "a")
+
+	//fetch a:b
+	foundObject, err = names.GetObjectViaSubject(ab)
+
+	assert.NoError(t, err)
+	assert.Equal(t, foundObject.Value, "abi")
+
+	foundSubject, err = names.GetOSubjectViaObject(bullet_stl.ListObject{"abi"})
+	assert.NoError(t, err)
+	assert.Equal(t, foundSubject.Value, "a:b")
+
+}
