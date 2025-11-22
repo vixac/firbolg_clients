@@ -17,7 +17,8 @@ type Mesh interface {
 	RemovePairs(pairs []ManyToManyPair) error
 	RemoveSubject(subject ListSubject) error
 	RemoveObject(object ListObject) error
-	AllPairsForSubject(subject ListSubject, subjectIsActuallyAPrefix bool) (*PairFetchResponse, error)
+	AllPairsForSubject(subject ListSubject) (*PairFetchResponse, error)
+	AllPairsForPrefixSubject(subject ListSubject) (*PairFetchResponse, error)
 	AllPairsForObject(object ListObject) (*PairFetchResponse, error)
 }
 
@@ -92,7 +93,7 @@ func (b *BulletMesh) RemovePairs(pairs []ManyToManyPair) error {
 }
 
 func (b *BulletMesh) RemoveSubject(subject ListSubject) error {
-	allPairs, err := b.AllPairsForSubject(subject, false)
+	allPairs, err := b.AllPairsForSubject(subject)
 	if err != nil {
 		return nil
 	}
@@ -154,7 +155,16 @@ func (b *BulletMesh) AllPairsForObject(object ListObject) (*PairFetchResponse, e
 		Pairs: pairs,
 	}, nil
 }
-func (b *BulletMesh) AllPairsForSubject(subject ListSubject, subjectIsActuallyAPrefix bool) (*PairFetchResponse, error) {
+
+func (b *BulletMesh) AllPairsForSubject(subject ListSubject) (*PairFetchResponse, error) {
+	return b.allPairsForSubjectimpl(subject, false)
+}
+
+func (b *BulletMesh) AllPairsForPrefixSubject(subject ListSubject) (*PairFetchResponse, error) {
+	return b.allPairsForSubjectimpl(subject, true)
+}
+
+func (b *BulletMesh) allPairsForSubjectimpl(subject ListSubject, subjectIsActuallyAPrefix bool) (*PairFetchResponse, error) {
 	prefixKey := buildKey(b.MeshName, b.ForwardSeparator, subject.Value, nil, subjectIsActuallyAPrefix)
 	req := bullet.TrackGetItemsByPrefixRequest{
 		BucketID: b.BucketId,
@@ -190,16 +200,29 @@ func (b *BulletMesh) AllPairsForSubject(subject ListSubject, subjectIsActuallyAP
 
 	var pairs []ManyToManyPair
 	for _, itemIncludingPrefix := range itemsInBucket {
-		object, found := strings.CutPrefix(itemIncludingPrefix, prefixKey)
-		if !found {
-			return nil, errors.New("invalid result did not contain the prefix")
+		split := strings.Split(itemIncludingPrefix, b.ForwardSeparator)
+		if len(split) != 3 {
+			return nil, errors.New("expected <listname><separator><subject><separator><object")
 		}
+		subjectValue := split[1]
+		objectValue := split[2]
+
 		pairs = append(pairs, ManyToManyPair{
-			Subject: subject,
-			Object:  ListObject{Value: object},
+			Subject: ListSubject{Value: subjectValue},
+			Object:  ListObject{Value: objectValue},
 		})
 	}
 
+	sort.Slice(pairs, func(i, j int) bool {
+		a := pairs[i]
+		b := pairs[j]
+
+		if a.Subject.Value == b.Subject.Value {
+			return a.Object.Value < b.Object.Value
+		} else {
+			return a.Subject.Value < b.Subject.Value
+		}
+	})
 	return &PairFetchResponse{
 		Pairs: pairs,
 	}, nil
