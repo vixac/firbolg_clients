@@ -103,7 +103,7 @@ func TestTwoWayNamesThatEclipse(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, foundObject.Value, "ant")
 
-	foundSubject, err := names.GetOSubjectViaObject(bullet_stl.ListObject{"ant"})
+	foundSubject, err := names.GetOSubjectViaObject(bullet_stl.ListObject{Value: "ant"})
 	assert.NoError(t, err)
 	assert.Equal(t, foundSubject.Value, "a")
 
@@ -113,7 +113,7 @@ func TestTwoWayNamesThatEclipse(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, foundObject.Value, "abi")
 
-	foundSubject, err = names.GetOSubjectViaObject(bullet_stl.ListObject{"abi"})
+	foundSubject, err = names.GetOSubjectViaObject(bullet_stl.ListObject{Value: "abi"})
 	assert.NoError(t, err)
 	assert.Equal(t, foundSubject.Value, "a:b")
 
