@@ -70,6 +70,9 @@ func (l *TwoWayListImpl) DeleteViaSub(s ListSubject) error {
 	if err != nil {
 		return err
 	}
+	if o == nil {
+		return nil
+	}
 	return l.backwardList.DeleteBySub(o.Invert())
 }
 
@@ -83,6 +86,9 @@ func (l *TwoWayListImpl) GetOSubjectViaObject(o ListObject) (*ListSubject, error
 	res, err := l.backwardList.GetObject(o.Invert())
 	if err != nil {
 		return nil, err
+	}
+	if res == nil {
+		return nil, nil
 	}
 	inverted := res.Invert()
 	return &inverted, nil
