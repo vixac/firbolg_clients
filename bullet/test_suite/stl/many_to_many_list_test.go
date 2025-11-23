@@ -53,7 +53,15 @@ func TestManyToManyInsertAndDelete(t *testing.T) {
 	assert.Equal(t, foundObjects.Pairs[0].Object.Value, "churchill")
 	assert.Equal(t, foundObjects.Pairs[1].Object.Value, "newton")
 
-	//	churchillPair := foundObjects.Pairs[0]
+	//fetch churchills languages
+	churchillsLanguages, err := mesh.AllPairsForObject(bullet_stl.ListObject{Value: "churchill"})
+	assert.NoError(t, err)
+	assert.Equal(t, len(churchillsLanguages.Pairs), 2)
+	assert.Equal(t, churchillsLanguages.Pairs[0].Subject.Value, "english")
+	assert.Equal(t, churchillsLanguages.Pairs[0].Object.Value, "churchill")
+	assert.Equal(t, churchillsLanguages.Pairs[1].Subject.Value, "french")
+	assert.Equal(t, churchillsLanguages.Pairs[1].Object.Value, "churchill")
+
 	//fetch france
 	foundObjects, err = mesh.AllPairsForSubject(french)
 	assert.NoError(t, err)

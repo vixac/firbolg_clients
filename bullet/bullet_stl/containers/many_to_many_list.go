@@ -2,6 +2,7 @@ package bullet_stl
 
 import (
 	"errors"
+	"fmt"
 	"sort"
 	"strings"
 
@@ -111,10 +112,7 @@ func (b *BulletMesh) AllPairsForObject(object ListObject) (*PairFetchResponse, e
 	if err != nil {
 		return nil, err
 	}
-	//fmt.Printf("VX:Fetch res is %+v\n", res)
-	if err != nil {
-		return nil, err
-	}
+
 	if res == nil {
 		return nil, nil
 	}
@@ -141,6 +139,7 @@ func (b *BulletMesh) AllPairsForObject(object ListObject) (*PairFetchResponse, e
 	var pairs []ManyToManyPair
 	//here the suffix is the subject because we're going backwards.
 	for _, itemIncludingPrefix := range itemsInBucket {
+		fmt.Printf("VX: item is %s\n", itemIncludingPrefix)
 		subject, found := strings.CutPrefix(itemIncludingPrefix, prefixKey)
 		if !found {
 			return nil, errors.New("invalid result did not contain the prefix")
