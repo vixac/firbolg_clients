@@ -39,7 +39,7 @@ func TestTwoWayInsertAndDelete(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, aliceNumber == nil)
 
-	carolSubject, err := footballerNumbers.GetOSubjectViaObject(bullet_stl.ListObject{Value: "9"})
+	carolSubject, err := footballerNumbers.GetSubjectViaObject(bullet_stl.ListObject{Value: "9"})
 	assert.NoError(t, err)
 	assert.Equal(t, carolSubject.Value, "carol")
 
@@ -48,7 +48,7 @@ func TestTwoWayInsertAndDelete(t *testing.T) {
 	bobNumber, err = footballerNumbers.GetObjectViaSubject(bob)
 	assert.NoError(t, err)
 	assert.Equal(t, bobNumber.Value, "9")
-	bobSubject, err := footballerNumbers.GetOSubjectViaObject(bullet_stl.ListObject{Value: "9"})
+	bobSubject, err := footballerNumbers.GetSubjectViaObject(bullet_stl.ListObject{Value: "9"})
 	assert.NoError(t, err)
 	assert.Equal(t, bobSubject.Value, "bob")
 
@@ -103,7 +103,7 @@ func TestTwoWayNamesThatEclipse(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, foundObject.Value, "ant")
 
-	foundSubject, err := names.GetOSubjectViaObject(bullet_stl.ListObject{Value: "ant"})
+	foundSubject, err := names.GetSubjectViaObject(bullet_stl.ListObject{Value: "ant"})
 	assert.NoError(t, err)
 	assert.Equal(t, foundSubject.Value, "a")
 
@@ -113,8 +113,29 @@ func TestTwoWayNamesThatEclipse(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, foundObject.Value, "abi")
 
-	foundSubject, err = names.GetOSubjectViaObject(bullet_stl.ListObject{Value: "abi"})
+	foundSubject, err = names.GetSubjectViaObject(bullet_stl.ListObject{Value: "abi"})
 	assert.NoError(t, err)
 	assert.Equal(t, foundSubject.Value, "a:b")
+
+	//fetch many
+	manyObjectReq := []bullet_stl.ListObject{
+		{
+			Value: "abi",
+		},
+		{
+			Value: "elephant",
+		},
+	}
+	fetchMany, err := names.GetSubjectsViaObjectForMany(manyObjectReq)
+	assert.NoError(t, err)
+	assert.True(t, fetchMany != nil)
+	assert.Equal(t, len(fetchMany), 2)
+	val, ok := fetchMany[bullet_stl.ListObject{Value: "abi"}]
+	assert.True(t, ok)
+	assert.Equal(t, val.Value, "a:b")
+
+	val, ok = fetchMany[bullet_stl.ListObject{Value: "elephant"}]
+	assert.True(t, ok)
+	assert.Equal(t, val.Value, "e")
 
 }

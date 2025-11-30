@@ -29,7 +29,30 @@ func TestSomething(t *testing.T) {
 	clients := buildClients()
 	for _, c := range clients {
 		err := c.TrackInsertOne(1, "testKey", int64(1234), nil, nil)
+		err = c.TrackInsertOne(1, "testKey2", int64(12345), nil, nil)
 		assert.NoError(t, err)
+		err = c.TrackInsertOne(1, "testKey3", int64(123456), nil, nil)
+		assert.NoError(t, err)
+
+		keys := []string{"testKey", "testKey2"}
+		//track get many
+		bucket := bullet_interface.TrackGetKeys{
+			BucketID: 1,
+			Keys:     keys,
+		}
+		buckets := []bullet_interface.TrackGetKeys{bucket}
+		req := bullet_interface.TrackGetManyRequest{
+			Buckets: buckets,
+		}
+		res, err := c.TrackGetMany(req)
+		assert.NoError(t, err)
+		assert.NotNil(t, res)
+		valuesInBucket, ok := res.Values[1]
+		assert.True(t, ok)
+		assert.Equal(t, len(valuesInBucket), 2)
+		assert.Equal(t, valuesInBucket["testKey"].Value, int64(1234))
+		assert.Equal(t, valuesInBucket["testKey2"].Value, int64(12345))
+
 	}
 
 }

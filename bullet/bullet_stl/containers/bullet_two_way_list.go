@@ -1,6 +1,8 @@
 package bullet_stl
 
 import (
+	"fmt"
+
 	bullet_client "github.com/vixac/firbolg_clients/bullet/bullet_interface"
 )
 
@@ -12,7 +14,8 @@ type TwoWayList interface {
 	DeleteViaSub(s ListSubject) error
 	DeleteViaObj(o ListObject) error
 	GetObjectViaSubject(s ListSubject) (*ListObject, error)
-	GetOSubjectViaObject(o ListObject) (*ListSubject, error)
+	GetSubjectViaObject(o ListObject) (*ListSubject, error)
+	GetSubjectsViaObjectForMany(objects []ListObject) (map[ListObject]*ListSubject, error)
 }
 
 // VX:TODO This is pure implementation. Perhaps does not need to implement TwoWayList interface at all. Can just be a type with methods.
@@ -81,8 +84,35 @@ func (l *TwoWayListImpl) GetObjectViaSubject(s ListSubject) (*ListObject, error)
 	return l.forwardList.GetObject(s)
 }
 
+func (l *TwoWayListImpl) GetSubjectsViaObjectForMany(objects []ListObject) (map[ListObject]*ListSubject, error) {
+	var inverted []ListSubject
+	for _, v := range objects {
+		inverted = append(inverted, v.Invert())
+	}
+
+	res, err := l.backwardList.GetObjectForMany(inverted)
+	if err != nil {
+		return nil, err
+	}
+	if res == nil {
+		fmt.Printf("VX: RES NIL")
+		return nil, nil
+	}
+	resultMap := make(map[ListObject]*ListSubject)
+	for key, value := range res {
+		if value == nil {
+			continue
+		}
+		newObject := key.Invert()
+		newSubject := value.Invert()
+		resultMap[newObject] = &newSubject
+	}
+	return resultMap, nil
+
+}
+
 // VX:TODO test
-func (l *TwoWayListImpl) GetOSubjectViaObject(o ListObject) (*ListSubject, error) {
+func (l *TwoWayListImpl) GetSubjectViaObject(o ListObject) (*ListSubject, error) {
 	res, err := l.backwardList.GetObject(o.Invert())
 	if err != nil {
 		return nil, err
