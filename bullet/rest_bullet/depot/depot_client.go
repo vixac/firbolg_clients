@@ -2,6 +2,7 @@ package rest_bullet
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/vixac/firbolg_clients/bullet/bullet_interface"
@@ -41,4 +42,8 @@ func (c *DepotClient) DepotGetMany(req bullet_interface.DepotGetManyRequest) (*b
 		return nil, fmt.Errorf("failed to unmarshal response: %w, message body was '%s'", err, string(resp))
 	}
 	return &result, nil
+}
+
+func (c *DepotClient) DepotUpsertMany(req []bullet_interface.DepotRequest) error {
+	return errors.New("not implemented")
 }
