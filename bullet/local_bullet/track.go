@@ -65,6 +65,58 @@ func (l *LocalBullet) TrackDeleteMany(req bullet_interface.TrackDeleteMany) erro
 	return l.Store.TrackDeleteMany(l.AppId, deleteItems)
 }
 
+func (l *LocalBullet) TrackGetByManyPrefixes(
+	req bullet_interface.TrackGetItemsbyManyPrefixesRequest,
+) (*bullet_interface.TrackGetManyResponse, error) {
+
+	if len(req.Prefixes) == 0 {
+		return nil, fmt.Errorf("prefixes must contain at least one prefix")
+	}
+
+	var metricValue *float64
+	var metricIsGt bool
+
+	if req.Metric != nil {
+		metricValue = &req.Metric.Value
+		metricIsGt = req.Metric.Operator == "gt"
+	}
+
+	items, err := l.Store.GetItemsByKeyPrefixes(
+		l.AppId,
+		req.BucketID,
+		req.Prefixes,
+		req.Tags,
+		metricValue,
+		metricIsGt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(items) == 0 {
+		return nil, nil
+	}
+
+	// Build response
+	values := make(map[int32]map[string]bullet_interface.TrackValue)
+	values[req.BucketID] = make(map[string]bullet_interface.TrackValue)
+
+	for _, item := range items {
+		values[req.BucketID][item.Key] = bullet_interface.TrackValue{
+			Value:  item.Value.Value,
+			Tag:    item.Value.Tag,
+			Metric: item.Value.Metric,
+		}
+	}
+
+	// Missing keys cannot be computed for prefix queries
+	return &bullet_interface.TrackGetManyResponse{
+		Values:  values,
+		Missing: map[string][]string{},
+	}, nil
+}
+
+// VX:TODO just call manyPrefixes?
 // TrackGetManyByPrefix queries by prefix, optionally filtering by tags and metric
 func (l *LocalBullet) TrackGetManyByPrefix(req bullet_interface.TrackGetItemsByPrefixRequest) (*bullet_interface.TrackGetManyResponse, error) {
 	var metricValue *float64

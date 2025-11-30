@@ -17,6 +17,7 @@ type TrackClientInterface interface {
 	TrackInsertOne(bucketID int32, key string, value int64, tag *int64, metric *float64) error
 	TrackDeleteMany(req TrackDeleteMany) error
 	TrackGetManyByPrefix(req TrackGetItemsByPrefixRequest) (*TrackGetManyResponse, error)
+	TrackGetByManyPrefixes(req TrackGetItemsbyManyPrefixesRequest) (*TrackGetManyResponse, error)
 }
 
 type BulletClientInterface interface {

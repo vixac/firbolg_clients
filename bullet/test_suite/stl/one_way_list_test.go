@@ -81,6 +81,14 @@ func TestOneWayListPersonAge(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, carolAge.Value, "40")
 
+	//fetch many
+	many := []bullet_stl.ListSubject{
+		alice, bob,
+	}
+	manyRes, err := ageList.GetObjectForMany(many)
+	assert.NoError(t, err)
+	assert.NotNil(t, manyRes)
+
 	//delete carol
 	err = ageList.DeleteBySub(carol)
 	assert.NoError(t, err)

@@ -27,6 +27,13 @@ type TrackGetItemsByPrefixRequest struct {
 	Metric   *MetricFilter `json:"metric,omitempty"` // optional metric filter
 }
 
+type TrackGetItemsbyManyPrefixesRequest struct {
+	BucketID int32         `json:"bucketId"`
+	Prefixes []string      `json:"prefixes"`
+	Tags     []int64       `json:"tags,omitempty"`   // optional IN clause
+	Metric   *MetricFilter `json:"metric,omitempty"` // optional metric filter
+}
+
 type TrackKeyValueItem struct {
 	Key   string `json:"key"`
 	Value int64  `json:"value"`
