@@ -1,9 +1,10 @@
 package bullet_interface
 
-// VX:TODO This is missing many depot bullet calls, but I don't think I'm going ot use bullet directly.. yet.
+// VX:TODO This is missing many depot bullet calls
 type DepotClientInterface interface {
 	DepotInsertOne(req DepotRequest) error
 	DepotGetMany(req DepotGetManyRequest) (*DepotGetManyResponse, error)
+	DepotUpsertMany(req []DepotRequest) error
 }
 
 type WayFinderClientInterface interface {

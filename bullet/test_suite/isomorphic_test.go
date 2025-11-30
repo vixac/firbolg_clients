@@ -25,10 +25,11 @@ func buildClients() []bullet_interface.BulletClientInterface {
 	return clients
 	//VX:TODO add rest client in here, and make this a map
 }
-func TestSomething(t *testing.T) {
+func TestTrack(t *testing.T) {
 	clients := buildClients()
 	for _, c := range clients {
 		err := c.TrackInsertOne(1, "testKey", int64(1234), nil, nil)
+		assert.NoError(t, err)
 		err = c.TrackInsertOne(1, "testKey_2", int64(12345), nil, nil)
 		assert.NoError(t, err)
 		err = c.TrackInsertOne(1, "not_a_testKey3", int64(123456), nil, nil)
@@ -69,7 +70,51 @@ func TestSomething(t *testing.T) {
 		assert.Equal(t, len(valuesInBucket), 2)
 		assert.Equal(t, valuesInBucket["testKey_2"].Value, int64(12345))
 		assert.Equal(t, valuesInBucket["not_a_testKey3"].Value, int64(123456))
+	}
 
+}
+
+func TestDepot(t *testing.T) {
+	clients := buildClients()
+	for _, c := range clients {
+		err := c.DepotInsertOne(bullet_interface.DepotRequest{
+			Key:   1,
+			Value: "value1",
+		})
+		assert.NoError(t, err)
+		//insert many, and overwrite key 1 too.
+		many := []bullet_interface.DepotRequest{
+			{
+				Key:   1,
+				Value: "new_value1",
+			},
+			{
+				Key:   2,
+				Value: "value2",
+			},
+			{
+				Key:   3,
+				Value: "value3",
+			},
+			{
+				Key:   4,
+				Value: "value4",
+			},
+		}
+
+		err = c.DepotUpsertMany(many)
+		assert.NoError(t, err)
+		keys := []int64{1, 3, 10}
+		manyReq := bullet_interface.DepotGetManyRequest{
+			Keys: keys,
+		}
+		res, err := c.DepotGetMany(manyReq)
+		assert.NoError(t, err)
+		assert.Equal(t, len(res.Values), 2)
+		assert.Equal(t, len(res.Missing), 1)
+		assert.Equal(t, res.Values[1], "new_value1")
+		assert.Equal(t, res.Values[3], "value3")
+		assert.Equal(t, res.Missing[0], int64(10))
 	}
 
 }
