@@ -97,7 +97,6 @@ func (l *BulletOneWayList) DeletePair(s ListSubject, o ListObject) error {
 	})
 }
 
-// VX:TODO TEST
 func (l *BulletOneWayList) GetObjectForMany(subjects []ListSubject) (map[ListSubject]*ListObject, error) {
 	var keys []string
 	for _, s := range subjects {
@@ -105,8 +104,7 @@ func (l *BulletOneWayList) GetObjectForMany(subjects []ListSubject) (map[ListSub
 		keys = append(keys, prefixKey)
 
 	}
-	/////ooopooooh shittt is it prefix or get many. It cant be get many because I don't have the fucking full key.
-	/// ittss not possible to do this.
+
 	prefixReq := bullet_interface.TrackGetItemsbyManyPrefixesRequest{
 		BucketID: l.BucketId,
 		Prefixes: keys,
@@ -125,7 +123,6 @@ func (l *BulletOneWayList) GetObjectForMany(subjects []ListSubject) (map[ListSub
 	}
 	values := resp.Values[l.BucketId]
 	resMap := make(map[ListSubject]*ListObject)
-	//VX:TODO TEST. does splitting work ok here?
 	for k, _ := range values {
 		//ok dammit this is not simple. Its all in the prefix key but we dont know which
 		//so we need to trim based on the separator

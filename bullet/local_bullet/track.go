@@ -65,7 +65,6 @@ func (l *LocalBullet) TrackDeleteMany(req bullet_interface.TrackDeleteMany) erro
 	return l.Store.TrackDeleteMany(l.AppId, deleteItems)
 }
 
-// VX:TODO test
 func (l *LocalBullet) TrackGetByManyPrefixes(
 	req bullet_interface.TrackGetItemsbyManyPrefixesRequest,
 ) (*bullet_interface.TrackGetManyResponse, error) {
