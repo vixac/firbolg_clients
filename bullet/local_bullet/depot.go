@@ -6,12 +6,12 @@ import (
 )
 
 func (l *LocalBullet) DepotInsertOne(req bullet_interface.DepotRequest) error {
-	return l.Store.DepotPut(l.AppId, req.Key, req.Value)
+	return l.Store.DepotPut(l.Space, req.Key, req.Value)
 }
 
 func (l *LocalBullet) DepotGetMany(req bullet_interface.DepotGetManyRequest) (*bullet_interface.DepotGetManyResponse, error) {
 
-	res, missing, err := l.Store.DepotGetMany(l.AppId, req.Keys)
+	res, missing, err := l.Store.DepotGetMany(l.Space, req.Keys)
 	if err != nil {
 		return nil, err
 	}
@@ -30,5 +30,5 @@ func (l *LocalBullet) DepotUpsertMany(req []bullet_interface.DepotRequest) error
 			Value: v.Value,
 		})
 	}
-	return l.Store.DepotPutMany(l.AppId, items)
+	return l.Store.DepotPutMany(l.Space, items)
 }

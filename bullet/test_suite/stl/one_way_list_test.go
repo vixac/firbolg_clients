@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/vixac/bullet/store/ram"
+	"github.com/vixac/bullet/store/store_interface"
 	"github.com/vixac/firbolg_clients/bullet/bullet_interface"
 	bullet_stl "github.com/vixac/firbolg_clients/bullet/bullet_stl/containers"
 	"github.com/vixac/firbolg_clients/bullet/local_bullet"
@@ -12,9 +13,13 @@ import (
 
 func BuildTestClient() bullet_interface.BulletClientInterface {
 	store := ram.NewRamStore()
+	space := store_interface.TenancySpace{
+		AppId:     12,
+		TenancyId: 100,
+	}
 	localClient := &local_bullet.LocalBullet{
 		Store: store,
-		AppId: 12,
+		Space: space,
 	}
 	return localClient
 }

@@ -16,7 +16,7 @@ func (l *LocalBullet) TrackGetMany(req bullet_interface.TrackGetManyRequest) (*b
 	}
 
 	// call store
-	found, missingMap, err := l.Store.TrackGetMany(l.AppId, requestMap)
+	found, missingMap, err := l.Store.TrackGetMany(l.Space, requestMap)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (l *LocalBullet) TrackGetMany(req bullet_interface.TrackGetManyRequest) (*b
 
 // TrackInsertOne inserts a single key-value into a bucket
 func (l *LocalBullet) TrackInsertOne(bucketID int32, key string, value int64, tag *int64, metric *float64) error {
-	return l.Store.TrackPut(l.AppId, bucketID, key, value, tag, metric)
+	return l.Store.TrackPut(l.Space, bucketID, key, value, tag, metric)
 }
 
 // TrackDeleteMany deletes multiple keys across buckets
@@ -62,7 +62,7 @@ func (l *LocalBullet) TrackDeleteMany(req bullet_interface.TrackDeleteMany) erro
 		})
 
 	}
-	return l.Store.TrackDeleteMany(l.AppId, deleteItems)
+	return l.Store.TrackDeleteMany(l.Space, deleteItems)
 }
 
 func (l *LocalBullet) TrackGetByManyPrefixes(
@@ -82,7 +82,7 @@ func (l *LocalBullet) TrackGetByManyPrefixes(
 	}
 
 	items, err := l.Store.GetItemsByKeyPrefixes(
-		l.AppId,
+		l.Space,
 		req.BucketID,
 		req.Prefixes,
 		req.Tags,
@@ -127,7 +127,7 @@ func (l *LocalBullet) TrackGetManyByPrefix(req bullet_interface.TrackGetItemsByP
 		metricIsGt = req.Metric.Operator == "gt"
 	}
 
-	items, err := l.Store.GetItemsByKeyPrefix(l.AppId, req.BucketID, req.Prefix, req.Tags, metricValue, metricIsGt)
+	items, err := l.Store.GetItemsByKeyPrefix(l.Space, req.BucketID, req.Prefix, req.Tags, metricValue, metricIsGt)
 	if err != nil {
 		return nil, err
 	}
