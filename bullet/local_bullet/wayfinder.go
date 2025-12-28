@@ -29,10 +29,10 @@ func bulletItemToClient(model *model.WayFinderGetResponse) *bullet_interface.Way
 }
 
 func (l *LocalBullet) WayFinderInsertOne(req bullet_interface.WayFinderPutRequest) (int64, error) {
-	return l.Store.WayFinderPut(l.AppId, req.BucketId, req.Key, req.Payload, req.Tag, req.Metric)
+	return l.Store.WayFinderPut(l.Space, req.BucketId, req.Key, req.Payload, req.Tag, req.Metric)
 }
 func (l *LocalBullet) WayFinderQueryByPrefix(req bullet_interface.WayFinderPrefixQueryRequest) ([]bullet_interface.WayFinderQueryItem, error) {
-	res, err := l.Store.WayFinderGetByPrefix(l.AppId, req.BucketId, req.Prefix, req.Tags, req.Metric, req.MetricIsGt)
+	res, err := l.Store.WayFinderGetByPrefix(l.Space, req.BucketId, req.Prefix, req.Tags, req.Metric, req.MetricIsGt)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (l *LocalBullet) WayFinderQueryByPrefix(req bullet_interface.WayFinderPrefi
 }
 
 func (l *LocalBullet) WayFinderGetOne(req bullet_interface.WayFinderGetOneRequest) (*bullet_interface.WayFinderItem, error) {
-	res, err := l.Store.WayFinderGetOne(l.AppId, req.BucketId, req.Key)
+	res, err := l.Store.WayFinderGetOne(l.Space, req.BucketId, req.Key)
 	if err != nil {
 		return nil, err
 	}

@@ -9,5 +9,5 @@ Local bullet is an implemtnation of BulletClientInterface that uses a local impl
 */
 type LocalBullet struct {
 	Store store.Store
-	AppId int32
+	Space store.TenancySpace
 }
