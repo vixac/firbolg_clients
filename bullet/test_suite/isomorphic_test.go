@@ -1,10 +1,12 @@
 package test_suite
 
 import (
+	"log"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	ram "github.com/vixac/bullet/store/ram"
+	sqlite_store "github.com/vixac/bullet/store/sqlite"
 	"github.com/vixac/bullet/store/store_interface"
 	"github.com/vixac/firbolg_clients/bullet/bullet_interface"
 	local_bullet "github.com/vixac/firbolg_clients/bullet/local_bullet"
@@ -27,6 +29,17 @@ func buildClients() []bullet_interface.BulletClientInterface {
 	}
 	var clients []bullet_interface.BulletClientInterface
 	clients = append(clients, localClient)
+
+	sqlLiteStore, err := sqlite_store.NewSQLiteStore("test-sqlite")
+	if err != nil {
+		log.Fatal(err)
+	}
+	localSqlClient := &local_bullet.LocalBullet{
+		Store: sqlLiteStore,
+		Space: space,
+	}
+	clients = append(clients, localSqlClient)
+
 	return clients
 	//VX:TODO add rest client in here, and make this a map
 }

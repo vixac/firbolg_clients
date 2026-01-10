@@ -5,6 +5,7 @@ type DepotClientInterface interface {
 	DepotInsertOne(req DepotRequest) error
 	DepotGetMany(req DepotGetManyRequest) (*DepotGetManyResponse, error)
 	DepotUpsertMany(req []DepotRequest) error
+	DepotDeleteOne(req DepotDeleteRequest) error
 }
 
 type WayFinderClientInterface interface {

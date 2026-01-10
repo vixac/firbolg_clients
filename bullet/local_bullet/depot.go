@@ -32,3 +32,7 @@ func (l *LocalBullet) DepotUpsertMany(req []bullet_interface.DepotRequest) error
 	}
 	return l.Store.DepotPutMany(l.Space, items)
 }
+
+func (l *LocalBullet) DepotDeleteOne(req bullet_interface.DepotDeleteRequest) error {
+	return l.Store.DepotDelete(l.Space, req.Key)
+}
