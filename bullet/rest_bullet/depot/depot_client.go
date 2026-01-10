@@ -47,3 +47,15 @@ func (c *DepotClient) DepotGetMany(req bullet_interface.DepotGetManyRequest) (*b
 func (c *DepotClient) DepotUpsertMany(req []bullet_interface.DepotRequest) error {
 	return errors.New("not implemented")
 }
+
+func (c *DepotClient) DepotDeleteOne(req bullet_interface.DepotDeleteRequest) error {
+	bodyBytes, err := json.Marshal(req)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request: %w", err)
+	}
+	_, err = c.PostReq("/delete-one", bodyBytes)
+	if err != nil {
+		return err
+	}
+	return nil
+}

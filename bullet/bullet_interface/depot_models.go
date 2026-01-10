@@ -22,3 +22,7 @@ type DepotGetManyResponse struct {
 	Values  map[int64]string `json:"values"`
 	Missing []int64          `json:"missing"`
 }
+
+type DepotDeleteRequest struct {
+	Key int64 `json:"key,string"`
+}
