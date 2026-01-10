@@ -102,7 +102,6 @@ func (b *BulletForwardMesh) allPairsForSubjectImpl(subject ListSubject, subjectI
 	if err != nil {
 		return nil, err
 	}
-	//fmt.Printf("VX:Fetch res is %+v\n", res)
 	if err != nil {
 		return nil, err
 	}

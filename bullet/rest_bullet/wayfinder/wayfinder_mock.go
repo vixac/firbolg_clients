@@ -1,7 +1,6 @@
 package rest_bullet
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/vixac/firbolg_clients/bullet/bullet_interface"
@@ -39,7 +38,6 @@ func (m *WayFinderMockClient) WayFinderInsertOne(req bullet_interface.WayFinderP
 }
 
 func (m *WayFinderMockClient) WayFinderGetOne(req bullet_interface.WayFinderGetOneRequest) (*bullet_interface.WayFinderItem, error) {
-	fmt.Printf("data is %+v", m.Data)
 	if m.Data == nil {
 		return nil, nil
 	}

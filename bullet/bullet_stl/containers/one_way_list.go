@@ -54,7 +54,6 @@ func buildKey(listName string, separator string, subject string, object *string,
 
 func (l *BulletOneWayList) Upsert(s ListSubject, o ListObject) error {
 	//VX:TODO check keySepawrator is not used in names
-	fmt.Printf("VX: Upsert subject %s, object %s \n", s.Value, o.Value)
 	existing, err := l.GetObject(s)
 	if err != nil {
 		return nil
@@ -68,7 +67,6 @@ func (l *BulletOneWayList) Upsert(s ListSubject, o ListObject) error {
 	}
 
 	key := buildKey(l.ListName, l.KeySeparator, s.Value, &o.Value, false)
-	fmt.Printf("Insert happeneing now under %s \n", key)
 	return l.TrackStore.TrackInsertOne(l.BucketId, key, 0, nil, nil)
 }
 
@@ -91,7 +89,6 @@ func (l *BulletOneWayList) DeletePair(s ListSubject, o ListObject) error {
 		BucketID: l.BucketId,
 		Key:      key,
 	})
-	fmt.Printf("Deleting item %d, %s \n", l.BucketId, key)
 	return l.TrackStore.TrackDeleteMany(bullet_interface.TrackDeleteMany{
 		Values: values,
 	})
@@ -141,13 +138,11 @@ func (l *BulletOneWayList) GetObjectForMany(subjects []ListSubject) (map[ListSub
 }
 func (l *BulletOneWayList) GetObject(s ListSubject) (*ListObject, error) {
 	prefixKey := buildKey(l.ListName, l.KeySeparator, s.Value, nil, false)
-	fmt.Printf("VX: fetching %s\n", prefixKey)
 	req := bullet_interface.TrackGetItemsByPrefixRequest{
 		BucketID: l.BucketId,
 		Prefix:   prefixKey,
 	}
 	res, err := l.TrackStore.TrackGetManyByPrefix(req)
-	//fmt.Printf("VX:Fetch res is %+v\n", res)
 	if err != nil {
 		return nil, err
 	}

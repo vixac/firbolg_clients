@@ -1,8 +1,6 @@
 package bullet_stl
 
 import (
-	"fmt"
-
 	bullet_client "github.com/vixac/firbolg_clients/bullet/bullet_interface"
 )
 
@@ -95,7 +93,6 @@ func (l *TwoWayListImpl) GetSubjectsViaObjectForMany(objects []ListObject) (map[
 		return nil, err
 	}
 	if res == nil {
-		fmt.Printf("VX: RES NIL")
 		return nil, nil
 	}
 	resultMap := make(map[ListObject]*ListSubject)
