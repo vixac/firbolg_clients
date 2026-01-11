@@ -1,8 +1,11 @@
 package test_suite
 
 import (
+	"fmt"
 	"log"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	ram "github.com/vixac/bullet/store/ram"
@@ -135,4 +138,199 @@ func TestDepot(t *testing.T) {
 		assert.Equal(t, res.Missing[0], int64(10))
 	}
 
+}
+
+func buildClientsForGrove(t *testing.T) []bullet_interface.BulletClientInterface {
+	store := ram.NewRamStore()
+	space := store_interface.TenancySpace{
+		AppId:     12,
+		TenancyId: 100,
+	}
+	localClient := &local_bullet.LocalBullet{
+		Store: store,
+		Space: space,
+	}
+	var clients []bullet_interface.BulletClientInterface
+	clients = append(clients, localClient)
+
+	// Use a unique temporary database file for this test run
+	dbPath := filepath.Join(t.TempDir(), fmt.Sprintf("test-sqlite-%d", time.Now().UnixNano()))
+	sqlLiteStore, err := sqlite_store.NewSQLiteStore(dbPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	localSqlClient := &local_bullet.LocalBullet{
+		Store: sqlLiteStore,
+		Space: space,
+	}
+	clients = append(clients, localSqlClient)
+
+	return clients
+}
+
+func TestGrove(t *testing.T) {
+	clients := buildClientsForGrove(t)
+	for _, c := range clients {
+		// Create a simple tree structure:
+		//       root
+		//      /    \
+		//   child1  child2
+		//    /
+		// grandchild1
+
+		// Create root node
+		err := c.GroveCreateNode(bullet_interface.GroveCreateNodeRequest{
+			NodeID:   "root",
+			Parent:   nil,
+			Position: nil,
+			Metadata: nil,
+		})
+		assert.NoError(t, err)
+
+		// Verify root exists
+		existsRes, err := c.GroveExists(bullet_interface.GroveExistsRequest{
+			NodeID: "root",
+		})
+		assert.NoError(t, err)
+		assert.True(t, existsRes.Exists)
+
+		// Create child1
+		child1Position := bullet_interface.ChildPosition(1.0)
+		err = c.GroveCreateNode(bullet_interface.GroveCreateNodeRequest{
+			NodeID:   "child1",
+			Parent:   (*bullet_interface.NodeID)(stringPtr("root")),
+			Position: &child1Position,
+			Metadata: nil,
+		})
+		assert.NoError(t, err)
+
+		// Create child2
+		child2Position := bullet_interface.ChildPosition(2.0)
+		err = c.GroveCreateNode(bullet_interface.GroveCreateNodeRequest{
+			NodeID:   "child2",
+			Parent:   (*bullet_interface.NodeID)(stringPtr("root")),
+			Position: &child2Position,
+			Metadata: nil,
+		})
+		assert.NoError(t, err)
+
+		// Create grandchild1 under child1
+		grandchild1Position := bullet_interface.ChildPosition(1.0)
+		err = c.GroveCreateNode(bullet_interface.GroveCreateNodeRequest{
+			NodeID:   "grandchild1",
+			Parent:   (*bullet_interface.NodeID)(stringPtr("child1")),
+			Position: &grandchild1Position,
+			Metadata: nil,
+		})
+		assert.NoError(t, err)
+
+		// Get children of root
+		childrenRes, err := c.GroveGetChildren(bullet_interface.GroveGetChildrenRequest{
+			NodeID:     "root",
+			Pagination: nil,
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, 2, len(childrenRes.Children))
+		assert.Contains(t, childrenRes.Children, bullet_interface.NodeID("child1"))
+		assert.Contains(t, childrenRes.Children, bullet_interface.NodeID("child2"))
+
+		// Get children of child1
+		childrenRes, err = c.GroveGetChildren(bullet_interface.GroveGetChildrenRequest{
+			NodeID:     "child1",
+			Pagination: nil,
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(childrenRes.Children))
+		assert.Equal(t, bullet_interface.NodeID("grandchild1"), childrenRes.Children[0])
+
+		// Get node info for child1
+		nodeInfoRes, err := c.GroveGetNodeInfo(bullet_interface.GroveGetNodeInfoRequest{
+			NodeID: "child1",
+		})
+		assert.NoError(t, err)
+		assert.NotNil(t, nodeInfoRes.NodeInfo)
+		assert.Equal(t, bullet_interface.NodeID("child1"), nodeInfoRes.NodeInfo.ID)
+		assert.Equal(t, bullet_interface.NodeID("root"), *nodeInfoRes.NodeInfo.Parent)
+
+		// Get ancestors of grandchild1 (should be child1, root)
+		ancestorsRes, err := c.GroveGetAncestors(bullet_interface.GroveGetAncestorsRequest{
+			NodeID:     "grandchild1",
+			Pagination: nil,
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, 2, len(ancestorsRes.Ancestors))
+		// Ancestors should be [child1, root] or [root, child1] depending on order
+		assert.Contains(t, ancestorsRes.Ancestors, bullet_interface.NodeID("child1"))
+		assert.Contains(t, ancestorsRes.Ancestors, bullet_interface.NodeID("root"))
+
+		// Get descendants of root
+		descendantsRes, err := c.GroveGetDescendants(bullet_interface.GroveGetDescendantsRequest{
+			NodeID:  "root",
+			Options: nil,
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, 3, len(descendantsRes.Descendants))
+
+		// Test aggregates
+		deltas := bullet_interface.AggregateDeltas{
+			"count": 5,
+		}
+		err = c.GroveApplyAggregateMutation(bullet_interface.GroveApplyAggregateMutationRequest{
+			MutationID: "mutation1",
+			NodeID:     "child1",
+			Deltas:     deltas,
+		})
+		assert.NoError(t, err)
+
+		// Get local aggregates for child1
+		localAggRes, err := c.GroveGetNodeLocalAggregates(bullet_interface.GroveGetNodeLocalAggregatesRequest{
+			NodeID: "child1",
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, bullet_interface.AggregateValue(5), localAggRes.Aggregates["count"])
+
+		// Get aggregates with descendants for child1 (should include grandchild1)
+		withDescAggRes, err := c.GroveGetNodeWithDescendantsAggregates(bullet_interface.GroveGetNodeWithDescendantsAggregatesRequest{
+			NodeID: "child1",
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, bullet_interface.AggregateValue(5), withDescAggRes.Aggregates["count"])
+
+		// Test move node - move grandchild1 to be under child2
+		newPosition := bullet_interface.ChildPosition(1.0)
+		err = c.GroveMoveNode(bullet_interface.GroveMoveNodeRequest{
+			NodeID:      "grandchild1",
+			NewParent:   (*bullet_interface.NodeID)(stringPtr("child2")),
+			NewPosition: &newPosition,
+		})
+		assert.NoError(t, err)
+
+		// Verify grandchild1 is now under child2
+		childrenRes, err = c.GroveGetChildren(bullet_interface.GroveGetChildrenRequest{
+			NodeID:     "child2",
+			Pagination: nil,
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(childrenRes.Children))
+		assert.Equal(t, bullet_interface.NodeID("grandchild1"), childrenRes.Children[0])
+
+		// Delete grandchild1 (soft delete)
+		err = c.GroveDeleteNode(bullet_interface.GroveDeleteNodeRequest{
+			NodeID: "grandchild1",
+			Soft:   true,
+		})
+		assert.NoError(t, err)
+
+		// Verify grandchild1 no longer exists
+		existsRes, err = c.GroveExists(bullet_interface.GroveExistsRequest{
+			NodeID: "grandchild1",
+		})
+		assert.NoError(t, err)
+		assert.False(t, existsRes.Exists)
+	}
+}
+
+// Helper function to convert string to *string
+func stringPtr(s string) *string {
+	return &s
 }
