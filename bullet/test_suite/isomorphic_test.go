@@ -1,8 +1,11 @@
 package test_suite
 
 import (
+	"fmt"
 	"log"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	ram "github.com/vixac/bullet/store/ram"
@@ -137,8 +140,36 @@ func TestDepot(t *testing.T) {
 
 }
 
+func buildClientsForGrove(t *testing.T) []bullet_interface.BulletClientInterface {
+	store := ram.NewRamStore()
+	space := store_interface.TenancySpace{
+		AppId:     12,
+		TenancyId: 100,
+	}
+	localClient := &local_bullet.LocalBullet{
+		Store: store,
+		Space: space,
+	}
+	var clients []bullet_interface.BulletClientInterface
+	clients = append(clients, localClient)
+
+	// Use a unique temporary database file for this test run
+	dbPath := filepath.Join(t.TempDir(), fmt.Sprintf("test-sqlite-%d", time.Now().UnixNano()))
+	sqlLiteStore, err := sqlite_store.NewSQLiteStore(dbPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	localSqlClient := &local_bullet.LocalBullet{
+		Store: sqlLiteStore,
+		Space: space,
+	}
+	clients = append(clients, localSqlClient)
+
+	return clients
+}
+
 func TestGrove(t *testing.T) {
-	clients := buildClients()
+	clients := buildClientsForGrove(t)
 	for _, c := range clients {
 		// Create a simple tree structure:
 		//       root
