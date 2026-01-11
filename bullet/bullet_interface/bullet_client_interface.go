@@ -22,8 +22,23 @@ type TrackClientInterface interface {
 	TrackGetByManyPrefixes(req TrackGetItemsbyManyPrefixesRequest) (*TrackGetManyResponse, error)
 }
 
+type GroveClientInterface interface {
+	GroveCreateNode(req GroveCreateNodeRequest) error
+	GroveDeleteNode(req GroveDeleteNodeRequest) error
+	GroveMoveNode(req GroveMoveNodeRequest) error
+	GroveExists(req GroveExistsRequest) (*GroveExistsResponse, error)
+	GroveGetNodeInfo(req GroveGetNodeInfoRequest) (*GroveGetNodeInfoResponse, error)
+	GroveGetChildren(req GroveGetChildrenRequest) (*GroveGetChildrenResponse, error)
+	GroveGetAncestors(req GroveGetAncestorsRequest) (*GroveGetAncestorsResponse, error)
+	GroveGetDescendants(req GroveGetDescendantsRequest) (*GroveGetDescendantsResponse, error)
+	GroveApplyAggregateMutation(req GroveApplyAggregateMutationRequest) error
+	GroveGetNodeLocalAggregates(req GroveGetNodeLocalAggregatesRequest) (*GroveGetAggregatesResponse, error)
+	GroveGetNodeWithDescendantsAggregates(req GroveGetNodeWithDescendantsAggregatesRequest) (*GroveGetAggregatesResponse, error)
+}
+
 type BulletClientInterface interface {
 	TrackClientInterface
 	DepotClientInterface
 	WayFinderClientInterface
+	GroveClientInterface
 }
