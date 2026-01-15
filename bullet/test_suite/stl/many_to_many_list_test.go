@@ -229,3 +229,58 @@ func TestAllPairsForManySubjects_Basic(t *testing.T) {
 	assert.Equal(t, "italian", res.Pairs[2].Subject.Value)
 	assert.Equal(t, "galileo", res.Pairs[2].Object.Value)
 }
+
+func TestAllPairsForManyObjects_Basic(t *testing.T) {
+	mesh, err := bullet_stl.NewBulletMesh(BuildTestClient(), 42, "test_many_objects", ">", "<")
+	assert.NoError(t, err)
+
+	english := bullet_stl.ListSubject{Value: "english"}
+	french := bullet_stl.ListSubject{Value: "french"}
+	italian := bullet_stl.ListSubject{Value: "italian"}
+
+	churchill := bullet_stl.ListObject{Value: "churchill"}
+	napoleon := bullet_stl.ListObject{Value: "napoleon"}
+	galileo := bullet_stl.ListObject{Value: "galileo"}
+
+	pairs := []bullet_stl.ManyToManyPair{
+		{Subject: english, Object: churchill},
+		{Subject: french, Object: churchill},
+		{Subject: french, Object: napoleon},
+		{Subject: italian, Object: galileo},
+	}
+
+	err = mesh.AppendPairs(pairs)
+	assert.NoError(t, err)
+
+	// Fetch pairs for multiple objects
+	res, err := mesh.AllPairsForManyObjects([]bullet_stl.ListObject{
+		churchill,
+		galileo,
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, 3, len(res.Pairs))
+
+	// Sorted by subject, then object
+	assert.Equal(t, "english", res.Pairs[0].Subject.Value)
+	assert.Equal(t, "churchill", res.Pairs[0].Object.Value)
+
+	assert.Equal(t, "french", res.Pairs[1].Subject.Value)
+	assert.Equal(t, "churchill", res.Pairs[1].Object.Value)
+
+	assert.Equal(t, "italian", res.Pairs[2].Subject.Value)
+	assert.Equal(t, "galileo", res.Pairs[2].Object.Value)
+}
+
+func TestAllPairsForManyObjects_EmptyResult(t *testing.T) {
+	mesh, err := bullet_stl.NewBulletMesh(BuildTestClient(), 42, "test_many_objects_empty", ">", "<")
+	assert.NoError(t, err)
+
+	// Query for objects that don't exist
+	res, err := mesh.AllPairsForManyObjects([]bullet_stl.ListObject{
+		{Value: "nonexistent1"},
+		{Value: "nonexistent2"},
+	})
+	assert.NoError(t, err)
+	assert.Nil(t, res)
+}

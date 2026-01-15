@@ -21,6 +21,7 @@ type Mesh interface {
 	AllPairsForManySubjects(subject []ListSubject) (*PairFetchResponse, error)
 	AllPairsForPrefixSubject(subject ListSubject) (*PairFetchResponse, error)
 	AllPairsForObject(object ListObject) (*PairFetchResponse, error)
+	AllPairsForManyObjects(objects []ListObject) (*PairFetchResponse, error)
 }
 
 type BulletMesh struct {
@@ -100,6 +101,36 @@ func (b *BulletMesh) RemoveSubject(subject ListSubject) error {
 	}
 
 	return b.RemovePairs(allPairs.Pairs)
+}
+
+func (b *BulletMesh) AllPairsForManyObjects(objects []ListObject) (*PairFetchResponse, error) {
+
+	var allPairs []ManyToManyPair
+	for _, object := range objects {
+		res, err := b.AllPairsForObject(object)
+		if err != nil {
+			return nil, err
+		}
+		if res != nil {
+			allPairs = append(allPairs, res.Pairs...)
+		}
+	}
+	if len(allPairs) == 0 {
+		return nil, nil
+	}
+	sort.Slice(allPairs, func(i, j int) bool {
+		a := allPairs[i]
+		b := allPairs[j]
+		if a.Subject.Value == b.Subject.Value {
+			return a.Object.Value < b.Object.Value
+		}
+		return a.Subject.Value < b.Subject.Value
+	})
+
+	return &PairFetchResponse{
+		Pairs: allPairs,
+	}, nil
+
 }
 
 func (b *BulletMesh) AllPairsForManySubjects(subjects []ListSubject) (*PairFetchResponse, error) {
