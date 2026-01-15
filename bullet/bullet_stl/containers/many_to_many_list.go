@@ -103,6 +103,24 @@ func (b *BulletMesh) RemoveSubject(subject ListSubject) error {
 	return b.RemovePairs(allPairs.Pairs)
 }
 
+func (b *BulletMesh) AllPairsForManySubjects(subjects []ListSubject) (*PairFetchResponse, error) {
+	//VX:TODO
+	var keys []string
+	for _, subject := range subjects {
+		prefixKey := buildKey(b.MeshName, b.ForwardSeparator, subject.Value, nil, false)
+		keys = append(keys, prefixKey)
+	}
+	trackGetKeys := bullet.TrackGetKeys{
+		BucketID: b.BucketId,
+		Keys:     keys,
+	}
+	req := bullet.TrackGetManyRequest{
+		Buckets: []bullet.TrackGetKeys{trackGetKeys},
+	}
+	b.TrackStore.TrackGetMany(req)
+	return nil, errors.New("not impls")
+}
+
 func (b *BulletMesh) AllPairsForObject(object ListObject) (*PairFetchResponse, error) {
 	prefixKey := buildKey(b.MeshName, b.BackwardSeparator, object.Value, nil, false)
 	req := bullet.TrackGetItemsByPrefixRequest{
@@ -163,24 +181,6 @@ func (b *BulletMesh) AllPairsForPrefixSubject(subject ListSubject) (*PairFetchRe
 	return b.allPairsForSubjectimpl(subject, true)
 }
 
-func (b *BulletMesh) AllPairsForManySubjects(subjects []ListSubject) (*PairFetchResponse, error) {
-	//VX:TODO
-	var keys []string
-	for _, subject := range subjects {
-		prefixKey := buildKey(b.MeshName, b.ForwardSeparator, subject.Value, nil, false)
-		keys = append(keys, prefixKey)
-	}
-	trackGetKeys := bullet.TrackGetKeys{
-		BucketID: b.BucketId,
-		Keys:     keys,
-	}
-	req := bullet.TrackGetManyRequest{
-		Buckets: []bullet.TrackGetKeys{trackGetKeys},
-	}
-	b.TrackStore.TrackGetMany(req)
-	return nil, errors.New("not impls")
-}
-
 func (b *BulletMesh) readFetchResponse(res *bullet.TrackGetManyResponse) ([]ManyToManyPair, error) {
 	if res == nil {
 		return nil, nil
@@ -218,6 +218,7 @@ func (b *BulletMesh) readFetchResponse(res *bullet.TrackGetManyResponse) ([]Many
 			Object:  ListObject{Value: objectValue},
 		})
 	}
+	fmt.Printf("VX: found %d pairs \n", len(pairs))
 	return pairs, nil
 }
 
