@@ -18,6 +18,7 @@ type Mesh interface {
 	RemoveSubject(subject ListSubject) error
 	RemoveObject(object ListObject) error
 	AllPairsForSubject(subject ListSubject) (*PairFetchResponse, error)
+	AllPairsForManySubjects(subject []ListSubject) (*PairFetchResponse, error)
 	AllPairsForPrefixSubject(subject ListSubject) (*PairFetchResponse, error)
 	AllPairsForObject(object ListObject) (*PairFetchResponse, error)
 }
@@ -101,6 +102,36 @@ func (b *BulletMesh) RemoveSubject(subject ListSubject) error {
 	return b.RemovePairs(allPairs.Pairs)
 }
 
+func (b *BulletMesh) AllPairsForManySubjects(subjects []ListSubject) (*PairFetchResponse, error) {
+	var allPairs []ManyToManyPair
+	for _, subject := range subjects {
+		res, err := b.AllPairsForSubject(subject)
+		if err != nil {
+			return nil, err
+		}
+		if res != nil {
+			allPairs = append(allPairs, res.Pairs...)
+		}
+	}
+
+	if len(allPairs) == 0 {
+		return nil, nil
+	}
+
+	sort.Slice(allPairs, func(i, j int) bool {
+		a := allPairs[i]
+		b := allPairs[j]
+		if a.Subject.Value == b.Subject.Value {
+			return a.Object.Value < b.Object.Value
+		}
+		return a.Subject.Value < b.Subject.Value
+	})
+
+	return &PairFetchResponse{
+		Pairs: allPairs,
+	}, nil
+}
+
 func (b *BulletMesh) AllPairsForObject(object ListObject) (*PairFetchResponse, error) {
 	prefixKey := buildKey(b.MeshName, b.BackwardSeparator, object.Value, nil, false)
 	req := bullet.TrackGetItemsByPrefixRequest{
@@ -115,8 +146,9 @@ func (b *BulletMesh) AllPairsForObject(object ListObject) (*PairFetchResponse, e
 	if res == nil {
 		return nil, nil
 	}
+
 	if len(res.Values) != 1 {
-		return nil, errors.New("missing bucket")
+		return nil, errors.New("missing bucket in pairs for object")
 	}
 	itemsByBucket := res.Values[b.BucketId]
 	if itemsByBucket == nil {
@@ -161,27 +193,17 @@ func (b *BulletMesh) AllPairsForPrefixSubject(subject ListSubject) (*PairFetchRe
 	return b.allPairsForSubjectimpl(subject, true)
 }
 
-func (b *BulletMesh) allPairsForSubjectimpl(subject ListSubject, subjectIsActuallyAPrefix bool) (*PairFetchResponse, error) {
-	prefixKey := buildKey(b.MeshName, b.ForwardSeparator, subject.Value, nil, subjectIsActuallyAPrefix)
-	req := bullet.TrackGetItemsByPrefixRequest{
-		BucketID: b.BucketId,
-		Prefix:   prefixKey,
-	}
-	res, err := b.TrackStore.TrackGetManyByPrefix(req)
-	if err != nil {
-		return nil, err
-	}
+func (b *BulletMesh) readFetchResponse(res *bullet.TrackGetManyResponse) ([]ManyToManyPair, error) {
 	if res == nil {
 		return nil, nil
 	}
 	if len(res.Values) != 1 {
-		return nil, errors.New("missing bucket")
+		return nil, errors.New("missing bucket from fetch read")
 	}
 	itemsByBucket := res.Values[b.BucketId]
 	if itemsByBucket == nil {
 		return nil, nil // its ok to get and find nothing
 	}
-
 	//if we're here we assume the object exists, so its an error if its not where we expect it
 	itemsInBucket := make([]string, 0, len(itemsByBucket))
 
@@ -208,7 +230,6 @@ func (b *BulletMesh) allPairsForSubjectimpl(subject ListSubject, subjectIsActual
 			Object:  ListObject{Value: objectValue},
 		})
 	}
-
 	sort.Slice(pairs, func(i, j int) bool {
 		a := pairs[i]
 		b := pairs[j]
@@ -219,6 +240,25 @@ func (b *BulletMesh) allPairsForSubjectimpl(subject ListSubject, subjectIsActual
 			return a.Subject.Value < b.Subject.Value
 		}
 	})
+	return pairs, nil
+}
+
+func (b *BulletMesh) allPairsForSubjectimpl(subject ListSubject, subjectIsActuallyAPrefix bool) (*PairFetchResponse, error) {
+	prefixKey := buildKey(b.MeshName, b.ForwardSeparator, subject.Value, nil, subjectIsActuallyAPrefix)
+	req := bullet.TrackGetItemsByPrefixRequest{
+		BucketID: b.BucketId,
+		Prefix:   prefixKey,
+	}
+	res, err := b.TrackStore.TrackGetManyByPrefix(req)
+	if err != nil {
+		return nil, err
+	}
+
+	pairs, err := b.readFetchResponse(res)
+	if err != nil || pairs == nil {
+		return nil, err
+	}
+
 	return &PairFetchResponse{
 		Pairs: pairs,
 	}, nil

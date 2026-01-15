@@ -186,3 +186,46 @@ func TestManyToManyNamesThatEclipse(t *testing.T) {
 	assert.Equal(t, foundObjects.Pairs[4].Object.Value, "g")
 
 }
+
+func TestAllPairsForManySubjects_Basic(t *testing.T) {
+	mesh, err := bullet_stl.NewBulletMesh(BuildTestClient(), 42, "test_many_subjects", ">", "<")
+	assert.NoError(t, err)
+
+	english := bullet_stl.ListSubject{Value: "english"}
+	french := bullet_stl.ListSubject{Value: "french"}
+	italian := bullet_stl.ListSubject{Value: "italian"}
+
+	pairs := []bullet_stl.ManyToManyPair{
+		{Subject: english, Object: bullet_stl.ListObject{Value: "newton"}},
+		{Subject: english, Object: bullet_stl.ListObject{Value: "churchill"}},
+		{Subject: french, Object: bullet_stl.ListObject{Value: "napoleon"}},
+		{Subject: italian, Object: bullet_stl.ListObject{Value: "galileo"}},
+	}
+
+	err = mesh.AppendPairs(pairs)
+	assert.NoError(t, err)
+
+	foundObjects, err := mesh.AllPairsForSubject(french)
+
+	assert.NoError(t, err)
+	assert.Equal(t, len(foundObjects.Pairs), 1)
+	assert.Equal(t, foundObjects.Pairs[0].Object.Value, "napoleon")
+
+	res, err := mesh.AllPairsForManySubjects([]bullet_stl.ListSubject{
+		english,
+		italian,
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, 3, len(res.Pairs))
+
+	// Sorted by subject, then object
+	assert.Equal(t, "english", res.Pairs[0].Subject.Value)
+	assert.Equal(t, "churchill", res.Pairs[0].Object.Value)
+
+	assert.Equal(t, "english", res.Pairs[1].Subject.Value)
+	assert.Equal(t, "newton", res.Pairs[1].Object.Value)
+
+	assert.Equal(t, "italian", res.Pairs[2].Subject.Value)
+	assert.Equal(t, "galileo", res.Pairs[2].Object.Value)
+}
