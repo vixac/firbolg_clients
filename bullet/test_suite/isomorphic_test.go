@@ -91,6 +91,9 @@ func TestTrack(t *testing.T) {
 		assert.Equal(t, len(valuesInBucket), 2)
 		assert.Equal(t, valuesInBucket["testKey_2"].Value, int64(12345))
 		assert.Equal(t, valuesInBucket["not_a_testKey3"].Value, int64(123456))
+
+		//test trackget many
+
 	}
 
 }
