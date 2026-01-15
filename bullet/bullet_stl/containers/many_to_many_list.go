@@ -2,6 +2,7 @@ package bullet_stl
 
 import (
 	"errors"
+	"fmt"
 	"sort"
 	"strings"
 
@@ -18,6 +19,7 @@ type Mesh interface {
 	RemoveSubject(subject ListSubject) error
 	RemoveObject(object ListObject) error
 	AllPairsForSubject(subject ListSubject) (*PairFetchResponse, error)
+	AllPairsForManySubjects(subject []ListSubject) (*PairFetchResponse, error)
 	AllPairsForPrefixSubject(subject ListSubject) (*PairFetchResponse, error)
 	AllPairsForObject(object ListObject) (*PairFetchResponse, error)
 }
@@ -161,16 +163,25 @@ func (b *BulletMesh) AllPairsForPrefixSubject(subject ListSubject) (*PairFetchRe
 	return b.allPairsForSubjectimpl(subject, true)
 }
 
-func (b *BulletMesh) allPairsForSubjectimpl(subject ListSubject, subjectIsActuallyAPrefix bool) (*PairFetchResponse, error) {
-	prefixKey := buildKey(b.MeshName, b.ForwardSeparator, subject.Value, nil, subjectIsActuallyAPrefix)
-	req := bullet.TrackGetItemsByPrefixRequest{
+func (b *BulletMesh) AllPairsForManySubjects(subjects []ListSubject) (*PairFetchResponse, error) {
+	//VX:TODO
+	var keys []string
+	for _, subject := range subjects {
+		prefixKey := buildKey(b.MeshName, b.ForwardSeparator, subject.Value, nil, false)
+		keys = append(keys, prefixKey)
+	}
+	trackGetKeys := bullet.TrackGetKeys{
 		BucketID: b.BucketId,
-		Prefix:   prefixKey,
+		Keys:     keys,
 	}
-	res, err := b.TrackStore.TrackGetManyByPrefix(req)
-	if err != nil {
-		return nil, err
+	req := bullet.TrackGetManyRequest{
+		Buckets: []bullet.TrackGetKeys{trackGetKeys},
 	}
+	b.TrackStore.TrackGetMany(req)
+	return nil, errors.New("not impls")
+}
+
+func (b *BulletMesh) readFetchResponse(res *bullet.TrackGetManyResponse) ([]ManyToManyPair, error) {
 	if res == nil {
 		return nil, nil
 	}
@@ -181,7 +192,6 @@ func (b *BulletMesh) allPairsForSubjectimpl(subject ListSubject, subjectIsActual
 	if itemsByBucket == nil {
 		return nil, nil // its ok to get and find nothing
 	}
-
 	//if we're here we assume the object exists, so its an error if its not where we expect it
 	itemsInBucket := make([]string, 0, len(itemsByBucket))
 
@@ -207,6 +217,24 @@ func (b *BulletMesh) allPairsForSubjectimpl(subject ListSubject, subjectIsActual
 			Subject: ListSubject{Value: subjectValue},
 			Object:  ListObject{Value: objectValue},
 		})
+	}
+	return pairs, nil
+}
+
+func (b *BulletMesh) allPairsForSubjectimpl(subject ListSubject, subjectIsActuallyAPrefix bool) (*PairFetchResponse, error) {
+	fmt.Printf("VX: reading all Pairs impl")
+	prefixKey := buildKey(b.MeshName, b.ForwardSeparator, subject.Value, nil, subjectIsActuallyAPrefix)
+	req := bullet.TrackGetItemsByPrefixRequest{
+		BucketID: b.BucketId,
+		Prefix:   prefixKey,
+	}
+	res, err := b.TrackStore.TrackGetManyByPrefix(req)
+	if err != nil {
+		return nil, err
+	}
+	pairs, err := b.readFetchResponse(res)
+	if err != nil {
+		return nil, err
 	}
 
 	sort.Slice(pairs, func(i, j int) bool {

@@ -77,7 +77,6 @@ func (l *TwoWayListImpl) DeleteViaSub(s ListSubject) error {
 	return l.backwardList.DeleteBySub(o.Invert())
 }
 
-// VX:TODO test
 func (l *TwoWayListImpl) GetObjectViaSubject(s ListSubject) (*ListObject, error) {
 	return l.forwardList.GetObject(s)
 }
