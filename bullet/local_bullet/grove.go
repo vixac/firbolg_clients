@@ -8,7 +8,7 @@ import (
 func (l *LocalBullet) GroveCreateNode(req bullet_interface.GroveCreateNodeRequest) error {
 	return l.Store.CreateNode(
 		l.Space,
-		"VX:TODO TREE ID",
+		store.TreeID(req.TreeID),
 		store.NodeID(req.NodeID),
 		(*store.NodeID)(req.Parent),
 		(*store.ChildPosition)(req.Position),
@@ -17,13 +17,13 @@ func (l *LocalBullet) GroveCreateNode(req bullet_interface.GroveCreateNodeReques
 }
 
 func (l *LocalBullet) GroveDeleteNode(req bullet_interface.GroveDeleteNodeRequest) error {
-	return l.Store.DeleteNode(l.Space, "VX:TODO TREE ID", store.NodeID(req.NodeID), req.Soft)
+	return l.Store.DeleteNode(l.Space, store.TreeID(req.TreeID), store.NodeID(req.NodeID), req.Soft)
 }
 
 func (l *LocalBullet) GroveMoveNode(req bullet_interface.GroveMoveNodeRequest) error {
 	return l.Store.MoveNode(
 		l.Space,
-		"VX:TODO TREE ID",
+		store.TreeID(req.TreeID),
 		store.NodeID(req.NodeID),
 		(*store.NodeID)(req.NewParent),
 		(*store.ChildPosition)(req.NewPosition),
@@ -31,7 +31,10 @@ func (l *LocalBullet) GroveMoveNode(req bullet_interface.GroveMoveNodeRequest) e
 }
 
 func (l *LocalBullet) GroveExists(req bullet_interface.GroveExistsRequest) (*bullet_interface.GroveExistsResponse, error) {
-	exists, err := l.Store.Exists(l.Space, "VX:TODO TREE ID", store.NodeID(req.NodeID))
+	exists, err := l.Store.Exists(
+		l.Space,
+		store.TreeID(req.TreeID),
+		store.NodeID(req.NodeID))
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +44,10 @@ func (l *LocalBullet) GroveExists(req bullet_interface.GroveExistsRequest) (*bul
 }
 
 func (l *LocalBullet) GroveGetNodeInfo(req bullet_interface.GroveGetNodeInfoRequest) (*bullet_interface.GroveGetNodeInfoResponse, error) {
-	nodeInfo, err := l.Store.GetNodeInfo(l.Space, "VX:TODO TREE ID", store.NodeID(req.NodeID))
+	nodeInfo, err := l.Store.GetNodeInfo(
+		l.Space,
+		store.TreeID(req.TreeID),
+		store.NodeID(req.NodeID))
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +75,9 @@ func (l *LocalBullet) GroveGetChildren(req bullet_interface.GroveGetChildrenRequ
 			Cursor: req.Pagination.Cursor,
 		}
 	}
-	children, paginationResult, err := l.Store.GetChildren(l.Space, "VX:TODO TREE ID", store.NodeID(req.NodeID), pagination)
+	children, paginationResult, err := l.Store.GetChildren(
+		l.Space,
+		store.TreeID(req.TreeID), store.NodeID(req.NodeID), pagination)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +106,7 @@ func (l *LocalBullet) GroveGetAncestors(req bullet_interface.GroveGetAncestorsRe
 			Cursor: req.Pagination.Cursor,
 		}
 	}
-	ancestors, paginationResult, err := l.Store.GetAncestors(l.Space, "VX:TODO TREE ID", store.NodeID(req.NodeID), pagination)
+	ancestors, paginationResult, err := l.Store.GetAncestors(l.Space, store.TreeID(req.TreeID), store.NodeID(req.NodeID), pagination)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +144,7 @@ func (l *LocalBullet) GroveGetDescendants(req bullet_interface.GroveGetDescendan
 			Pagination:   pagination,
 		}
 	}
-	descendants, paginationResult, err := l.Store.GetDescendants(l.Space, "VX:TODO TREE ID", store.NodeID(req.NodeID), options)
+	descendants, paginationResult, err := l.Store.GetDescendants(l.Space, store.TreeID(req.TreeID), store.NodeID(req.NodeID), options)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +176,7 @@ func (l *LocalBullet) GroveApplyAggregateMutation(req bullet_interface.GroveAppl
 	}
 	return l.Store.ApplyAggregateMutation(
 		l.Space,
-		"VX:TODO TREE ID",
+		store.TreeID(req.TreeID),
 		store.MutationID(req.MutationID),
 		store.NodeID(req.NodeID),
 		deltas,
@@ -176,7 +184,7 @@ func (l *LocalBullet) GroveApplyAggregateMutation(req bullet_interface.GroveAppl
 }
 
 func (l *LocalBullet) GroveGetNodeLocalAggregates(req bullet_interface.GroveGetNodeLocalAggregatesRequest) (*bullet_interface.GroveGetAggregatesResponse, error) {
-	aggregates, err := l.Store.GetNodeLocalAggregates(l.Space, "VX:TODO TREE ID", store.NodeID(req.NodeID))
+	aggregates, err := l.Store.GetNodeLocalAggregates(l.Space, store.TreeID(req.TreeID), store.NodeID(req.NodeID))
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +199,7 @@ func (l *LocalBullet) GroveGetNodeLocalAggregates(req bullet_interface.GroveGetN
 }
 
 func (l *LocalBullet) GroveGetNodeWithDescendantsAggregates(req bullet_interface.GroveGetNodeWithDescendantsAggregatesRequest) (*bullet_interface.GroveGetAggregatesResponse, error) {
-	aggregates, err := l.Store.GetNodeWithDescendantsAggregates(l.Space, "VX:TODO TREE ID", store.NodeID(req.NodeID))
+	aggregates, err := l.Store.GetNodeWithDescendantsAggregates(l.Space, store.TreeID(req.TreeID), store.NodeID(req.NodeID))
 	if err != nil {
 		return nil, err
 	}

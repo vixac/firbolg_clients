@@ -2,6 +2,7 @@ package bullet_interface
 
 // Types imported from store_interface
 type NodeID string
+type TreeID string
 type AggregateKey string
 type MutationID string
 type AggregateValue int64
@@ -44,6 +45,7 @@ type DescendantOptions struct {
 // Request structures
 type GroveCreateNodeRequest struct {
 	NodeID   NodeID         `json:"nodeId"`
+	TreeID   TreeID         `json:"treeId"`
 	Parent   *NodeID        `json:"parent,omitempty"`
 	Position *ChildPosition `json:"position,omitempty"`
 	Metadata *NodeMetadata  `json:"metadata,omitempty"`
@@ -51,50 +53,60 @@ type GroveCreateNodeRequest struct {
 
 type GroveDeleteNodeRequest struct {
 	NodeID NodeID `json:"nodeId"`
+	TreeID TreeID `json:"treeId"`
 	Soft   bool   `json:"soft"`
 }
 
 type GroveMoveNodeRequest struct {
 	NodeID      NodeID         `json:"nodeId"`
+	TreeID      TreeID         `json:"treeId"`
 	NewParent   *NodeID        `json:"newParent,omitempty"`
 	NewPosition *ChildPosition `json:"newPosition,omitempty"`
 }
 
 type GroveExistsRequest struct {
 	NodeID NodeID `json:"nodeId"`
+	TreeID TreeID `json:"treeId"`
 }
 
 type GroveGetNodeInfoRequest struct {
 	NodeID NodeID `json:"nodeId"`
+	TreeID TreeID `json:"treeId"`
 }
 
 type GroveGetChildrenRequest struct {
 	NodeID     NodeID            `json:"nodeId"`
+	TreeID     TreeID            `json:"treeId"`
 	Pagination *PaginationParams `json:"pagination,omitempty"`
 }
 
 type GroveGetAncestorsRequest struct {
 	NodeID     NodeID            `json:"nodeId"`
+	TreeID     TreeID            `json:"treeId"`
 	Pagination *PaginationParams `json:"pagination,omitempty"`
 }
 
 type GroveGetDescendantsRequest struct {
 	NodeID  NodeID             `json:"nodeId"`
+	TreeID  TreeID             `json:"treeId"`
 	Options *DescendantOptions `json:"options,omitempty"`
 }
 
 type GroveApplyAggregateMutationRequest struct {
 	MutationID MutationID      `json:"mutationId"`
 	NodeID     NodeID          `json:"nodeId"`
+	TreeID     TreeID          `json:"treeId"`
 	Deltas     AggregateDeltas `json:"deltas"`
 }
 
 type GroveGetNodeLocalAggregatesRequest struct {
 	NodeID NodeID `json:"nodeId"`
+	TreeID TreeID `json:"treeId"`
 }
 
 type GroveGetNodeWithDescendantsAggregatesRequest struct {
 	NodeID NodeID `json:"nodeId"`
+	TreeID TreeID `json:"treeId"`
 }
 
 // Response structures
