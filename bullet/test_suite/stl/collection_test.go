@@ -97,6 +97,26 @@ func TestCollectionDeleteItems(t *testing.T) {
 	}
 }
 
+func TestCollectionEditPayload(t *testing.T) {
+	client := BuildTestClient()
+	collection := bullet_stl.NewBulletCollection(42, client, client)
+
+	id, err := collection.CreateItemUnder("config:theme", "light")
+	assert.NoError(t, err)
+	assert.NotNil(t, id)
+
+	all, err := collection.AllItems()
+	assert.NoError(t, err)
+	assert.Equal(t, "light", all[*id])
+
+	err = collection.EditPayload(*id, "dark")
+	assert.NoError(t, err)
+
+	all, err = collection.AllItems()
+	assert.NoError(t, err)
+	assert.Equal(t, "dark", all[*id])
+}
+
 func TestCollectionEmptyFetch(t *testing.T) {
 	client := BuildTestClient()
 	collection := bullet_stl.NewBulletCollection(42, client, client)

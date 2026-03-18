@@ -11,6 +11,7 @@ This will resemble wayfinder in functionality.
 */
 type Collection interface {
 	CreateItemUnder(key string, payload string) (*CollectionId, error)
+	EditPayload(id CollectionId, payload string) error
 	AllItems() (map[CollectionId]string, error) //VX:Note this can be upgraded to have paging
 	AllItemsUnderPrefix(prefix string) (map[CollectionId]string, error)
 	DeleteItems(ids []CollectionId) error //VX:Note delete payload first as it has the less bad edge case
@@ -36,6 +37,12 @@ func NewBulletCollection(bucket int32, track bullet_interface.TrackClientInterfa
 	}
 }
 
+func (b *BulletCollection) EditPayload(id CollectionId, payload string) error {
+	return b.DepotStore.DepotUpdate(bullet_interface.DepotUpdateRequest{
+		ID:    id.DepotId,
+		Value: payload,
+	})
+}
 func (b *BulletCollection) CreateItemUnder(key string, payload string) (*CollectionId, error) {
 	depotReq := bullet_interface.DepotCreateRequest{
 		BucketID: b.BucketId,
