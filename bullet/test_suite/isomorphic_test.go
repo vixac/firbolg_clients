@@ -101,44 +101,63 @@ func TestTrack(t *testing.T) {
 func TestDepot(t *testing.T) {
 	clients := buildClients()
 	for _, c := range clients {
-		err := c.DepotInsertOne(bullet_interface.DepotRequest{
-			Key:   1,
-			Value: "value1",
+		const bucket = int32(1)
+
+		// create one
+		createResp, err := c.DepotCreate(bullet_interface.DepotCreateRequest{BucketID: bucket, Value: "value1"})
+		assert.NoError(t, err)
+		id1 := createResp.ID
+
+		// create many
+		createManyResp, err := c.DepotCreateMany(bullet_interface.DepotCreateManyRequest{
+			BucketID: bucket,
+			Values:   []string{"value2", "value3"},
 		})
 		assert.NoError(t, err)
-		//insert many, and overwrite key 1 too.
-		many := []bullet_interface.DepotRequest{
-			{
-				Key:   1,
-				Value: "new_value1",
-			},
-			{
-				Key:   2,
-				Value: "value2",
-			},
-			{
-				Key:   3,
-				Value: "value3",
-			},
-			{
-				Key:   4,
-				Value: "value4",
-			},
-		}
+		assert.Equal(t, 2, len(createManyResp.IDs))
+		id2, id3 := createManyResp.IDs[0], createManyResp.IDs[1]
 
-		err = c.DepotUpsertMany(many)
+		// update
+		err = c.DepotUpdate(bullet_interface.DepotUpdateRequest{ID: id1, Value: "updated_value1"})
 		assert.NoError(t, err)
-		keys := []int64{1, 3, 10}
-		manyReq := bullet_interface.DepotGetManyRequest{
-			Keys: keys,
-		}
-		res, err := c.DepotGetMany(manyReq)
+
+		// get one
+		getResp, err := c.DepotGetOne(bullet_interface.DepotGetRequest{ID: id1})
 		assert.NoError(t, err)
-		assert.Equal(t, len(res.Values), 2)
-		assert.Equal(t, len(res.Missing), 1)
-		assert.Equal(t, res.Values[1], "new_value1")
-		assert.Equal(t, res.Values[3], "value3")
-		assert.Equal(t, res.Missing[0], int64(10))
+		assert.Equal(t, "updated_value1", getResp.Value)
+
+		// get many (id1, id3, and a nonexistent id)
+		fakeID := int64(-999)
+		getManyResp, err := c.DepotGetMany(bullet_interface.DepotGetManyRequest{IDs: []int64{id1, id3, fakeID}})
+		assert.NoError(t, err)
+		assert.Equal(t, 2, len(getManyResp.Values))
+		assert.Equal(t, 1, len(getManyResp.Missing))
+		assert.Equal(t, "updated_value1", getManyResp.Values[id1])
+		assert.Equal(t, "value3", getManyResp.Values[id3])
+		assert.Equal(t, fakeID, getManyResp.Missing[0])
+
+		// get all by bucket
+		allResp, err := c.DepotGetAllByBucket(bullet_interface.DepotBucketRequest{BucketID: bucket})
+		assert.NoError(t, err)
+		assert.Equal(t, 3, len(allResp.Values))
+
+		// delete one
+		err = c.DepotDelete(bullet_interface.DepotDeleteRequest{ID: id2})
+		assert.NoError(t, err)
+
+		allResp, err = c.DepotGetAllByBucket(bullet_interface.DepotBucketRequest{BucketID: bucket})
+		assert.NoError(t, err)
+		assert.Equal(t, 2, len(allResp.Values))
+
+		// delete by bucket
+		err = c.DepotDeleteByBucket(bullet_interface.DepotBucketRequest{BucketID: bucket})
+		assert.NoError(t, err)
+
+		allResp, err = c.DepotGetAllByBucket(bullet_interface.DepotBucketRequest{BucketID: bucket})
+		assert.NoError(t, err)
+		assert.Equal(t, 0, len(allResp.Values))
+
+		_ = id2 // used above
 	}
 
 }

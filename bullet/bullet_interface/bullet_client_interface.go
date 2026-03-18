@@ -1,11 +1,14 @@
 package bullet_interface
 
-// VX:TODO This is missing many depot bullet calls
 type DepotClientInterface interface {
-	DepotInsertOne(req DepotRequest) error
+	DepotCreate(req DepotCreateRequest) (*DepotCreateResponse, error)
+	DepotCreateMany(req DepotCreateManyRequest) (*DepotCreateManyResponse, error)
+	DepotUpdate(req DepotUpdateRequest) error
+	DepotGetOne(req DepotGetRequest) (*DepotGetResponse, error)
 	DepotGetMany(req DepotGetManyRequest) (*DepotGetManyResponse, error)
-	DepotUpsertMany(req []DepotRequest) error
-	DepotDeleteOne(req DepotDeleteRequest) error
+	DepotDelete(req DepotDeleteRequest) error
+	DepotDeleteByBucket(req DepotBucketRequest) error
+	DepotGetAllByBucket(req DepotBucketRequest) (*DepotGetAllByBucketResponse, error)
 }
 
 type WayFinderClientInterface interface {
