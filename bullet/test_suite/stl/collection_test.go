@@ -97,6 +97,53 @@ func TestCollectionDeleteItems(t *testing.T) {
 	}
 }
 
+func TestCollectionItemsForKeys(t *testing.T) {
+	client := BuildTestClient()
+	collection := bullet_stl.NewBulletCollection(42, client, client)
+
+	_, err := collection.CreateItemUnder("animal:dog", "woof")
+	assert.NoError(t, err)
+	_, err = collection.CreateItemUnder("animal:dog:puppy", "yip")
+	assert.NoError(t, err)
+	_, err = collection.CreateItemUnder("animal:cat", "meow")
+	assert.NoError(t, err)
+	_, err = collection.CreateItemUnder("vehicle:car", "vroom")
+	assert.NoError(t, err)
+
+	// Exact key lookup — should NOT return "animal:dog:puppy" even though it shares a prefix
+	res, err := collection.ItemsForKeys([]string{"animal:dog", "vehicle:car"})
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(res))
+
+	byKey := make(map[string]string)
+	for k, v := range res {
+		byKey[k.Key] = v
+	}
+	assert.Equal(t, "woof", byKey["animal:dog"])
+	assert.Equal(t, "vroom", byKey["vehicle:car"])
+	assert.Empty(t, byKey["animal:dog:puppy"])
+	assert.Empty(t, byKey["animal:cat"])
+}
+
+func TestCollectionItemsForKeys_Missing(t *testing.T) {
+	client := BuildTestClient()
+	collection := bullet_stl.NewBulletCollection(42, client, client)
+
+	_, err := collection.CreateItemUnder("a", "alpha")
+	assert.NoError(t, err)
+
+	// One key exists, one does not — should return only the existing one
+	res, err := collection.ItemsForKeys([]string{"a", "nonexistent"})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(res))
+
+	byKey := make(map[string]string)
+	for k, v := range res {
+		byKey[k.Key] = v
+	}
+	assert.Equal(t, "alpha", byKey["a"])
+}
+
 func TestCollectionEditPayload(t *testing.T) {
 	client := BuildTestClient()
 	collection := bullet_stl.NewBulletCollection(42, client, client)
