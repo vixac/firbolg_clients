@@ -110,7 +110,7 @@ func (b *BulletCollection) AllItemsUnderPrefix(prefix string) (map[CollectionId]
 	return result, nil
 }
 func (b *BulletCollection) DeleteItems(ids []CollectionId) error {
-	//VX:TODO delete many
+	// Delete depot first: if track delete fails, orphaned track entries are the less bad edge case
 	for _, v := range ids {
 		req := bullet_interface.DepotDeleteRequest{
 			ID: v.DepotId,
@@ -120,5 +120,12 @@ func (b *BulletCollection) DeleteItems(ids []CollectionId) error {
 			return err
 		}
 	}
-	return nil
+	var trackDeletes []bullet_interface.TrackDeleteValue
+	for _, v := range ids {
+		trackDeletes = append(trackDeletes, bullet_interface.TrackDeleteValue{
+			BucketID: b.BucketId,
+			Key:      v.Key,
+		})
+	}
+	return b.TrackStore.TrackDeleteMany(bullet_interface.TrackDeleteMany{Values: trackDeletes})
 }
