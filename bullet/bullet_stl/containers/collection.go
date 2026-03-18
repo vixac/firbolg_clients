@@ -14,6 +14,7 @@ type Collection interface {
 	EditPayload(id CollectionId, payload string) error
 	AllItems() (map[CollectionId]string, error) //VX:Note this can be upgraded to have paging
 	AllItemsUnderPrefix(prefix string) (map[CollectionId]string, error)
+	ItemsForKeys(keys []string) (map[CollectionId]string, error)
 	DeleteItems(ids []CollectionId) error //VX:Note delete payload first as it has the less bad edge case
 }
 
@@ -43,6 +44,19 @@ func (b *BulletCollection) EditPayload(id CollectionId, payload string) error {
 		Value: payload,
 	})
 }
+
+func (b *BulletCollection) ItemsForKeys(keys []string) (map[CollectionId]string, error) {
+	req := bullet_interface.TrackGetManyRequest{
+		Buckets: []bullet_interface.TrackGetKeys{
+			{BucketID: b.BucketId, Keys: keys},
+		},
+	}
+	res, err := b.TrackStore.TrackGetMany(req)
+	if err != nil || res == nil {
+		return nil, err
+	}
+	return b.fetchPayloadsFor(res)
+}
 func (b *BulletCollection) CreateItemUnder(key string, payload string) (*CollectionId, error) {
 	depotReq := bullet_interface.DepotCreateRequest{
 		BucketID: b.BucketId,
@@ -69,20 +83,8 @@ func (b *BulletCollection) AllItems() (map[CollectionId]string, error) {
 	return b.AllItemsUnderPrefix("")
 }
 
-func (b *BulletCollection) AllItemsUnderPrefix(prefix string) (map[CollectionId]string, error) {
-	trackReq := bullet_interface.TrackGetItemsByPrefixRequest{
-		BucketID: b.BucketId,
-		Prefix:   prefix,
-	}
-
-	//use track to get all the ids that fall under this collection.
-	res, err := b.TrackStore.TrackGetManyByPrefix(trackReq)
-	if err != nil || res == nil {
-		return nil, err
-	}
-
+func (b *BulletCollection) fetchPayloadsFor(res *bullet_interface.TrackGetManyResponse) (map[CollectionId]string, error) {
 	bucket, ok := res.Values[b.BucketId]
-
 	if !ok {
 		return nil, nil
 	}
@@ -115,6 +117,21 @@ func (b *BulletCollection) AllItemsUnderPrefix(prefix string) (map[CollectionId]
 		result[col] = payload
 	}
 	return result, nil
+}
+
+func (b *BulletCollection) AllItemsUnderPrefix(prefix string) (map[CollectionId]string, error) {
+	trackReq := bullet_interface.TrackGetItemsByPrefixRequest{
+		BucketID: b.BucketId,
+		Prefix:   prefix,
+	}
+
+	//use track to get all the ids that fall under this collection.
+	res, err := b.TrackStore.TrackGetManyByPrefix(trackReq)
+	if err != nil || res == nil {
+		return nil, err
+	}
+
+	return b.fetchPayloadsFor(res)
 }
 func (b *BulletCollection) DeleteItems(ids []CollectionId) error {
 	// Delete depot first: if track delete fails, orphaned track entries are the less bad edge case
