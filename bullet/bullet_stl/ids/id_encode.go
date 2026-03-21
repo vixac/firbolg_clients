@@ -7,7 +7,7 @@ const base = int64(36)
 
 // BulletIdIntToaasci converts a non-negative int64 to a fixed-length base36 string.
 // Returns an error if intValue is out of range for the chosen idSize.
-func BulletIdIntToaasci(intValue int64) (string, error) {
+func BulletIdIntToAasci(intValue int64) (string, error) {
 	if intValue < 0 {
 		return "", fmt.Errorf("value must be non-negative: %d", intValue)
 	}
