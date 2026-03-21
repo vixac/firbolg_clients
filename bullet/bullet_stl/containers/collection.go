@@ -17,6 +17,7 @@ type Collection interface {
 	EditPayload(id CollectionId, payload string, updateTime *time.Time) error
 	AllItems() (map[CollectionId]string, error) //VX:Note this can be upgraded to have paging
 	AllItemsUnderPrefix(prefix string) (map[CollectionId]CollectionItem, error)
+	AllItemsUnderPrefixes(prefixes []string) (map[CollectionId]CollectionItem, error)
 	ItemsForKeys(keys []string) (map[CollectionId]CollectionItem, error)
 	DeleteItems(ids []CollectionId) error //VX:Note delete payload first as it has the less bad edge case
 }
@@ -146,6 +147,20 @@ func (b *BulletCollection) fetchItemsFor(res *bullet_interface.TrackGetManyRespo
 		result[col] = item
 	}
 	return result, nil
+}
+
+func (b *BulletCollection) AllItemsUnderPrefixes(prefixes []string) (map[CollectionId]CollectionItem, error) {
+	trackReq := bullet_interface.TrackGetItemsbyManyPrefixesRequest{
+		BucketID: b.BucketId,
+		Prefixes: prefixes,
+	}
+
+	//use track to get all the ids that fall under this collection.
+	res, err := b.TrackStore.TrackGetByManyPrefixes(trackReq)
+	if err != nil || res == nil {
+		return nil, err
+	}
+	return b.fetchItemsFor(res)
 }
 
 func (b *BulletCollection) AllItemsUnderPrefix(prefix string) (map[CollectionId]CollectionItem, error) {
