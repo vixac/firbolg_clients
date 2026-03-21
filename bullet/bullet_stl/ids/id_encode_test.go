@@ -17,7 +17,7 @@ func TestBulletIdIntToaasciAndDecode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.expected, func(t *testing.T) {
-			encoded, err := BulletIdIntToaasci(tt.intValue)
+			encoded, err := BulletIdIntToAasci(tt.intValue)
 			if err != nil {
 				t.Fatalf("unexpected error encoding: %v", err)
 			}
@@ -37,7 +37,7 @@ func TestBulletIdIntToaasciAndDecode(t *testing.T) {
 }
 
 func TestBulletIdIntToaasci_Invalid(t *testing.T) {
-	_, err := BulletIdIntToaasci(-1)
+	_, err := BulletIdIntToAasci(-1)
 	if err == nil {
 		t.Error("expected error for negative value, got nil")
 	}
@@ -59,7 +59,7 @@ func TestBulletIdIntToaasci_RoundTrip(t *testing.T) {
 	// Test a range of values for round-trip correctness
 
 	for i := int64(0); i < 1000; i++ {
-		encoded, err := BulletIdIntToaasci(i)
+		encoded, err := BulletIdIntToAasci(i)
 		if err != nil {
 			t.Fatalf("unexpected error encoding %d: %v", i, err)
 		}
@@ -73,4 +73,30 @@ func TestBulletIdIntToaasci_RoundTrip(t *testing.T) {
 			t.Errorf("round-trip mismatch: %d -> %s -> %d", i, encoded, decoded)
 		}
 	}
+}
+
+func TestBulletIdStruct(t *testing.T) {
+	first, err := NewBulletIdFromInt(12345)
+	if err != nil {
+		t.Errorf("error creating id %v", err)
+	}
+
+	if first.AasciValue != "9ix" {
+		t.Errorf("wrong aasci %s", first.AasciValue)
+	}
+
+	if first.IntValue != 12345 {
+		t.Errorf("wrong int %d", first.IntValue)
+	}
+
+	next := first.Next()
+
+	if next.AasciValue != "9iy" {
+		t.Errorf("wrong aasci %s", first.AasciValue)
+	}
+
+	if next.IntValue != 12346 {
+		t.Errorf("wrong int %d", first.IntValue)
+	}
+
 }
