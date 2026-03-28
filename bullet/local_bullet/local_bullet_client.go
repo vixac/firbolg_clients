@@ -1,7 +1,7 @@
 package local_bullet
 
 import (
-	store "github.com/vixac/bullet/store/store_interface"
+	store_interface "github.com/vixac/bullet/store"
 )
 
 /*
@@ -9,7 +9,6 @@ Local bullet is an implemtnation of BulletClientInterface that uses a local impl
 WayFinder is no longer part of Store in v0.2.0; provide a WayFinderStore implementation separately if needed.
 */
 type LocalBullet struct {
-	Store      store.Store
-	WayFinder  store.WayFinderStore
-	Space      store.TenancySpace
+	Store store_interface.Store
+	Space store_interface.TenancySpace
 }

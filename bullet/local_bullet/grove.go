@@ -1,40 +1,39 @@
 package local_bullet
 
 import (
-	store "github.com/vixac/bullet/store/store_interface"
 	"github.com/vixac/firbolg_clients/bullet/bullet_interface"
 )
 
 func (l *LocalBullet) GroveCreateNode(req bullet_interface.GroveCreateNodeRequest) error {
 	return l.Store.CreateNode(
 		l.Space,
-		store.TreeID(req.TreeID),
-		store.NodeID(req.NodeID),
-		(*store.NodeID)(req.Parent),
-		(*store.ChildPosition)(req.Position),
-		(*store.NodeMetadata)(req.Metadata),
+		bullet_interface.TreeID(req.TreeID),
+		bullet_interface.NodeID(req.NodeID),
+		(*bullet_interface.NodeID)(req.Parent),
+		(*bullet_interface.ChildPosition)(req.Position),
+		(*bullet_interface.NodeMetadata)(req.Metadata),
 	)
 }
 
 func (l *LocalBullet) GroveDeleteNode(req bullet_interface.GroveDeleteNodeRequest) error {
-	return l.Store.DeleteNode(l.Space, store.TreeID(req.TreeID), store.NodeID(req.NodeID), req.Soft)
+	return l.Store.DeleteNode(l.Space, bullet_interface.TreeID(req.TreeID), bullet_interface.NodeID(req.NodeID), req.Soft)
 }
 
 func (l *LocalBullet) GroveMoveNode(req bullet_interface.GroveMoveNodeRequest) error {
 	return l.Store.MoveNode(
 		l.Space,
-		store.TreeID(req.TreeID),
-		store.NodeID(req.NodeID),
-		(*store.NodeID)(req.NewParent),
-		(*store.ChildPosition)(req.NewPosition),
+		bullet_interface.TreeID(req.TreeID),
+		bullet_interface.NodeID(req.NodeID),
+		(*bullet_interface.NodeID)(req.NewParent),
+		(*bullet_interface.ChildPosition)(req.NewPosition),
 	)
 }
 
 func (l *LocalBullet) GroveExists(req bullet_interface.GroveExistsRequest) (*bullet_interface.GroveExistsResponse, error) {
 	exists, err := l.Store.Exists(
 		l.Space,
-		store.TreeID(req.TreeID),
-		store.NodeID(req.NodeID))
+		bullet_interface.TreeID(req.TreeID),
+		bullet_interface.NodeID(req.NodeID))
 	if err != nil {
 		return nil, err
 	}
@@ -46,8 +45,8 @@ func (l *LocalBullet) GroveExists(req bullet_interface.GroveExistsRequest) (*bul
 func (l *LocalBullet) GroveGetNodeInfo(req bullet_interface.GroveGetNodeInfoRequest) (*bullet_interface.GroveGetNodeInfoResponse, error) {
 	nodeInfo, err := l.Store.GetNodeInfo(
 		l.Space,
-		store.TreeID(req.TreeID),
-		store.NodeID(req.NodeID))
+		bullet_interface.TreeID(req.TreeID),
+		bullet_interface.NodeID(req.NodeID))
 	if err != nil {
 		return nil, err
 	}
@@ -68,20 +67,20 @@ func (l *LocalBullet) GroveGetNodeInfo(req bullet_interface.GroveGetNodeInfoRequ
 }
 
 func (l *LocalBullet) GroveGetChildren(req bullet_interface.GroveGetChildrenRequest) (*bullet_interface.GroveGetChildrenResponse, error) {
-	var pagination *store.PaginationParams
+	var pagination *bullet_interface.PaginationParams
 	if req.Pagination != nil {
-		pagination = &store.PaginationParams{
+		pagination = &bullet_interface.PaginationParams{
 			Limit:  req.Pagination.Limit,
 			Cursor: req.Pagination.Cursor,
 		}
 	}
 	children, paginationResult, err := l.Store.GetChildren(
 		l.Space,
-		store.TreeID(req.TreeID), store.NodeID(req.NodeID), pagination)
+		bullet_interface.TreeID(req.TreeID), bullet_interface.NodeID(req.NodeID), pagination)
 	if err != nil {
 		return nil, err
 	}
-	// Convert []store.NodeID to []bullet_interface.NodeID
+	// Convert []bullet_interface.NodeID to []bullet_interface.NodeID
 	childrenConverted := make([]bullet_interface.NodeID, len(children))
 	for i, child := range children {
 		childrenConverted[i] = bullet_interface.NodeID(child)
@@ -99,18 +98,18 @@ func (l *LocalBullet) GroveGetChildren(req bullet_interface.GroveGetChildrenRequ
 }
 
 func (l *LocalBullet) GroveGetAncestors(req bullet_interface.GroveGetAncestorsRequest) (*bullet_interface.GroveGetAncestorsResponse, error) {
-	var pagination *store.PaginationParams
+	var pagination *bullet_interface.PaginationParams
 	if req.Pagination != nil {
-		pagination = &store.PaginationParams{
+		pagination = &bullet_interface.PaginationParams{
 			Limit:  req.Pagination.Limit,
 			Cursor: req.Pagination.Cursor,
 		}
 	}
-	ancestors, paginationResult, err := l.Store.GetAncestors(l.Space, store.TreeID(req.TreeID), store.NodeID(req.NodeID), pagination)
+	ancestors, paginationResult, err := l.Store.GetAncestors(l.Space, bullet_interface.TreeID(req.TreeID), bullet_interface.NodeID(req.NodeID), pagination)
 	if err != nil {
 		return nil, err
 	}
-	// Convert []store.NodeID to []bullet_interface.NodeID
+	// Convert []bullet_interface.NodeID to []bullet_interface.NodeID
 	ancestorsConverted := make([]bullet_interface.NodeID, len(ancestors))
 	for i, ancestor := range ancestors {
 		ancestorsConverted[i] = bullet_interface.NodeID(ancestor)
@@ -128,27 +127,27 @@ func (l *LocalBullet) GroveGetAncestors(req bullet_interface.GroveGetAncestorsRe
 }
 
 func (l *LocalBullet) GroveGetDescendants(req bullet_interface.GroveGetDescendantsRequest) (*bullet_interface.GroveGetDescendantsResponse, error) {
-	var options *store.DescendantOptions
+	var options *bullet_interface.DescendantOptions
 	if req.Options != nil {
-		var pagination *store.PaginationParams
+		var pagination *bullet_interface.PaginationParams
 		if req.Options.Pagination != nil {
-			pagination = &store.PaginationParams{
+			pagination = &bullet_interface.PaginationParams{
 				Limit:  req.Options.Pagination.Limit,
 				Cursor: req.Options.Pagination.Cursor,
 			}
 		}
-		options = &store.DescendantOptions{
+		options = &bullet_interface.DescendantOptions{
 			MaxDepth:     req.Options.MaxDepth,
 			IncludeDepth: req.Options.IncludeDepth,
 			BreadthFirst: req.Options.BreadthFirst,
 			Pagination:   pagination,
 		}
 	}
-	descendants, paginationResult, err := l.Store.GetDescendants(l.Space, store.TreeID(req.TreeID), store.NodeID(req.NodeID), options)
+	descendants, paginationResult, err := l.Store.GetDescendants(l.Space, bullet_interface.TreeID(req.TreeID), bullet_interface.NodeID(req.NodeID), options)
 	if err != nil {
 		return nil, err
 	}
-	// Convert []store.NodeWithDepth to []bullet_interface.NodeWithDepth
+	// Convert []bullet_interface.NodeWithDepth to []bullet_interface.NodeWithDepth
 	descendantsConverted := make([]bullet_interface.NodeWithDepth, len(descendants))
 	for i, descendant := range descendants {
 		descendantsConverted[i] = bullet_interface.NodeWithDepth{
@@ -169,26 +168,26 @@ func (l *LocalBullet) GroveGetDescendants(req bullet_interface.GroveGetDescendan
 }
 
 func (l *LocalBullet) GroveApplyAggregateMutation(req bullet_interface.GroveApplyAggregateMutationRequest) error {
-	// Convert bullet_interface.AggregateDeltas to store.AggregateDeltas
-	deltas := make(store.AggregateDeltas)
+	// Convert bullet_interface.AggregateDeltas to bullet_interface.AggregateDeltas
+	deltas := make(bullet_interface.AggregateDeltas)
 	for k, v := range req.Deltas {
-		deltas[store.AggregateKey(k)] = store.AggregateValue(v)
+		deltas[bullet_interface.AggregateKey(k)] = bullet_interface.AggregateValue(v)
 	}
 	return l.Store.ApplyAggregateMutation(
 		l.Space,
-		store.TreeID(req.TreeID),
-		store.MutationID(req.MutationID),
-		store.NodeID(req.NodeID),
+		bullet_interface.TreeID(req.TreeID),
+		bullet_interface.MutationID(req.MutationID),
+		bullet_interface.NodeID(req.NodeID),
 		deltas,
 	)
 }
 
 func (l *LocalBullet) GroveGetNodeLocalAggregates(req bullet_interface.GroveGetNodeLocalAggregatesRequest) (*bullet_interface.GroveGetAggregatesResponse, error) {
-	aggregates, err := l.Store.GetNodeLocalAggregates(l.Space, store.TreeID(req.TreeID), store.NodeID(req.NodeID))
+	aggregates, err := l.Store.GetNodeLocalAggregates(l.Space, bullet_interface.TreeID(req.TreeID), bullet_interface.NodeID(req.NodeID))
 	if err != nil {
 		return nil, err
 	}
-	// Convert map[store.AggregateKey]store.AggregateValue to map[bullet_interface.AggregateKey]bullet_interface.AggregateValue
+	// Convert map[bullet_interface.AggregateKey]bullet_interface.AggregateValue to map[bullet_interface.AggregateKey]bullet_interface.AggregateValue
 	aggregatesConverted := make(map[bullet_interface.AggregateKey]bullet_interface.AggregateValue)
 	for k, v := range aggregates {
 		aggregatesConverted[bullet_interface.AggregateKey(k)] = bullet_interface.AggregateValue(v)
@@ -199,11 +198,11 @@ func (l *LocalBullet) GroveGetNodeLocalAggregates(req bullet_interface.GroveGetN
 }
 
 func (l *LocalBullet) GroveGetNodeWithDescendantsAggregates(req bullet_interface.GroveGetNodeWithDescendantsAggregatesRequest) (*bullet_interface.GroveGetAggregatesResponse, error) {
-	aggregates, err := l.Store.GetNodeWithDescendantsAggregates(l.Space, store.TreeID(req.TreeID), store.NodeID(req.NodeID))
+	aggregates, err := l.Store.GetNodeWithDescendantsAggregates(l.Space, bullet_interface.TreeID(req.TreeID), bullet_interface.NodeID(req.NodeID))
 	if err != nil {
 		return nil, err
 	}
-	// Convert map[store.AggregateKey]store.AggregateValue to map[bullet_interface.AggregateKey]bullet_interface.AggregateValue
+	// Convert map[bullet_interface.AggregateKey]bullet_interface.AggregateValue to map[bullet_interface.AggregateKey]bullet_interface.AggregateValue
 	aggregatesConverted := make(map[bullet_interface.AggregateKey]bullet_interface.AggregateValue)
 	for k, v := range aggregates {
 		aggregatesConverted[bullet_interface.AggregateKey(k)] = bullet_interface.AggregateValue(v)
