@@ -85,6 +85,7 @@ func (b *BulletForwardMesh) RemoveSubject(subject ListSubject) error {
 	}
 	return b.RemovePairs(allPairs.Pairs)
 }
+
 func (b *BulletForwardMesh) AllPairsForPrefixSubject(subject ListSubject) (*PairFetchResponse, error) {
 	return b.allPairsForSubjectImpl(subject, true)
 }
@@ -92,6 +93,7 @@ func (b *BulletForwardMesh) AllPairsForPrefixSubject(subject ListSubject) (*Pair
 func (b *BulletForwardMesh) AllPairsForSubject(subject ListSubject) (*PairFetchResponse, error) {
 	return b.allPairsForSubjectImpl(subject, false)
 }
+
 func (b *BulletForwardMesh) allPairsForSubjectImpl(subject ListSubject, subjectIsActuallyAPrefix bool) (*PairFetchResponse, error) {
 	prefixKey := buildKey(b.MeshName, b.Separator, subject.Value, nil, subjectIsActuallyAPrefix)
 	req := bullet.TrackGetItemsByPrefixRequest{
