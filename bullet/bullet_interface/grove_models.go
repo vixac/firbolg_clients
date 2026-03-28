@@ -109,6 +109,16 @@ type GroveGetNodeWithDescendantsAggregatesRequest struct {
 	TreeID TreeID `json:"treeId"`
 }
 
+type GroveGetAncestorsBulkRequest struct {
+	NodeIDs []NodeID `json:"nodeIds"`
+	TreeID  TreeID   `json:"treeId"`
+}
+
+type GroveGetNodeLocalAggregatesBulkRequest struct {
+	NodeIDs []NodeID `json:"nodeIds"`
+	TreeID  TreeID   `json:"treeId"`
+}
+
 // Response structures
 type GroveExistsResponse struct {
 	Exists bool `json:"exists"`
@@ -135,4 +145,14 @@ type GroveGetDescendantsResponse struct {
 
 type GroveGetAggregatesResponse struct {
 	Aggregates map[AggregateKey]AggregateValue `json:"aggregates"`
+}
+
+type GroveGetAncestorsBulkResponse struct {
+	Ancestors    map[NodeID][]NodeID `json:"ancestors"`
+	MissingNodes []NodeID            `json:"missingNodes"`
+}
+
+type GroveGetNodeLocalAggregatesBulkResponse struct {
+	Aggregates   map[NodeID]map[AggregateKey]AggregateValue `json:"aggregates"`
+	MissingNodes []NodeID                                   `json:"missingNodes"`
 }
