@@ -11,12 +11,6 @@ type DepotClientInterface interface {
 	DepotGetAllByBucket(req DepotBucketRequest) (*DepotGetAllByBucketResponse, error)
 }
 
-type WayFinderClientInterface interface {
-	WayFinderInsertOne(req WayFinderPutRequest) (int64, error)
-	WayFinderQueryByPrefix(req WayFinderPrefixQueryRequest) ([]WayFinderQueryItem, error)
-	WayFinderGetOne(req WayFinderGetOneRequest) (*WayFinderItem, error)
-}
-
 type TrackClientInterface interface {
 	TrackGetMany(req TrackGetManyRequest) (*TrackGetManyResponse, error)
 	TrackInsertOne(bucketID int32, key string, value int64, tag *int64, metric *float64) error
@@ -42,6 +36,5 @@ type GroveClientInterface interface {
 type BulletClientInterface interface {
 	TrackClientInterface
 	DepotClientInterface
-	WayFinderClientInterface
 	GroveClientInterface
 }

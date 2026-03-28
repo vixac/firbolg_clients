@@ -1,9 +1,0 @@
-{
-  "items": [
-    {
-      "key": "foo",
-      "itemId": 42,
-      "payload": "some payload"
-    }
-  ]
-}
