@@ -1,7 +1,7 @@
 package local_bullet
 
 import (
-	store_interface "github.com/vixac/bullet/store"
+	"github.com/vixac/bullet/store/store_interface"
 )
 
 /*
