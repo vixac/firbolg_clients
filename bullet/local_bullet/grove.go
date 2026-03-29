@@ -240,6 +240,33 @@ func (l *LocalBullet) GroveGetAncestorsBulk(req bullet_interface.GroveGetAncesto
 	}, nil
 }
 
+func (l *LocalBullet) GroveGetNodeWithDescendantsAggregatesBulk(req bullet_interface.GroveGetNodeWithDescendantsAggregatesBulkRequest) (*bullet_interface.GroveGetNodeWithDescendantsAggregatesBulkResponse, error) {
+	nodeIDs := make([]store_interface.NodeID, len(req.NodeIDs))
+	for i, n := range req.NodeIDs {
+		nodeIDs[i] = store_interface.NodeID(n)
+	}
+	aggregatesMap, missingNodes, err := l.Store.GetNodeWithDescendantsAggregatesBulk(l.Space, store_interface.TreeID(req.TreeID), nodeIDs)
+	if err != nil {
+		return nil, err
+	}
+	aggregatesConverted := make(map[bullet_interface.NodeID]map[bullet_interface.AggregateKey]bullet_interface.AggregateValue, len(aggregatesMap))
+	for nodeID, aggregates := range aggregatesMap {
+		inner := make(map[bullet_interface.AggregateKey]bullet_interface.AggregateValue, len(aggregates))
+		for k, v := range aggregates {
+			inner[bullet_interface.AggregateKey(k)] = bullet_interface.AggregateValue(v)
+		}
+		aggregatesConverted[bullet_interface.NodeID(nodeID)] = inner
+	}
+	missingConverted := make([]bullet_interface.NodeID, len(missingNodes))
+	for i, n := range missingNodes {
+		missingConverted[i] = bullet_interface.NodeID(n)
+	}
+	return &bullet_interface.GroveGetNodeWithDescendantsAggregatesBulkResponse{
+		Aggregates:   aggregatesConverted,
+		MissingNodes: missingConverted,
+	}, nil
+}
+
 func (l *LocalBullet) GroveGetNodeLocalAggregatesBulk(req bullet_interface.GroveGetNodeLocalAggregatesBulkRequest) (*bullet_interface.GroveGetNodeLocalAggregatesBulkResponse, error) {
 	nodeIDs := make([]store_interface.NodeID, len(req.NodeIDs))
 	for i, n := range req.NodeIDs {
