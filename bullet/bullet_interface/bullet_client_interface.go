@@ -33,6 +33,7 @@ type GroveClientInterface interface {
 	GroveGetNodeWithDescendantsAggregates(req GroveGetNodeWithDescendantsAggregatesRequest) (*GroveGetAggregatesResponse, error)
 	GroveGetAncestorsBulk(req GroveGetAncestorsBulkRequest) (*GroveGetAncestorsBulkResponse, error)
 	GroveGetNodeLocalAggregatesBulk(req GroveGetNodeLocalAggregatesBulkRequest) (*GroveGetNodeLocalAggregatesBulkResponse, error)
+	GroveGetNodeWithDescendantsAggregatesBulk(req GroveGetNodeWithDescendantsAggregatesBulkRequest) (*GroveGetNodeWithDescendantsAggregatesBulkResponse, error)
 }
 
 type BulletClientInterface interface {
