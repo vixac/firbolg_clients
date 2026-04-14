@@ -2,357 +2,418 @@ package test_suite
 
 import (
 	"fmt"
-	"log"
+	"net/http/httptest"
 	"path/filepath"
 	"testing"
-	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/vixac/bullet/api"
 	ram "github.com/vixac/bullet/store/ram"
 	sqlite_store "github.com/vixac/bullet/store/sqlite"
 	"github.com/vixac/bullet/store/store_interface"
 	"github.com/vixac/firbolg_clients/bullet/bullet_interface"
 	local_bullet "github.com/vixac/firbolg_clients/bullet/local_bullet"
+	"github.com/vixac/firbolg_clients/bullet/rest_bullet"
 )
 
-// the goal here is to test that both clients behave in the same way.
-// The problem is I don't have a complete rest client setup, as each
-// rest client test just sets up the 1 endpoint being tested.
-// this can be added later.
+type clientPair struct {
+	name  string
+	local bullet_interface.BulletClientInterface
+	rest  bullet_interface.BulletClientInterface
+}
 
-func buildClients() []bullet_interface.BulletClientInterface {
-	store := ram.NewRamStore()
+func buildClientPairs(t *testing.T) []clientPair {
+	t.Helper()
+
 	space := store_interface.TenancySpace{
 		AppId:     12,
 		TenancyId: 100,
 	}
-	localClient := &local_bullet.LocalBullet{
-		Store: store,
-		Space: space,
-	}
-	var clients []bullet_interface.BulletClientInterface
-	clients = append(clients, localClient)
 
-	sqlLiteStore, err := sqlite_store.NewSQLiteStore("test-sqlite")
-	if err != nil {
-		log.Fatal(err)
-	}
-	localSqlClient := &local_bullet.LocalBullet{
-		Store: sqlLiteStore,
-		Space: space,
-	}
-	clients = append(clients, localSqlClient)
+	buildPair := func(name string, store store_interface.Store) clientPair {
+		server := newBulletServer(t, store)
+		t.Cleanup(server.Close)
 
-	return clients
-	//VX:TODO add rest client in here, and make this a map
+		return clientPair{
+			name: name,
+			local: &local_bullet.LocalBullet{
+				Store: store,
+				Space: space,
+			},
+			rest: rest_bullet.NewRestClientWithHTTPClient(server.URL, space, server.Client()),
+		}
+	}
+
+	sqlitePath := filepath.Join(t.TempDir(), "test-sqlite.db")
+	sqliteStore, err := sqlite_store.NewSQLiteStore(sqlitePath)
+	require.NoError(t, err)
+
+	return []clientPair{
+		buildPair("ram", ram.NewRamStore()),
+		buildPair("sqlite", sqliteStore),
+	}
 }
+
+func newBulletServer(t *testing.T, store store_interface.Store) *httptest.Server {
+	t.Helper()
+
+	gin.SetMode(gin.TestMode)
+	engine := gin.New()
+	api.SetupTrackRouter(store, "/track", engine)
+	api.SetupDepotRouter(store, "/depot", engine)
+	api.SetupGroveRouter(store, "/grove", engine)
+	return httptest.NewServer(engine)
+}
+
 func TestTrack(t *testing.T) {
-	clients := buildClients()
-	for _, c := range clients {
-		err := c.TrackInsertOne(1, "testKey", int64(1234), nil, nil)
-		assert.NoError(t, err)
-		err = c.TrackInsertOne(1, "testKey_2", int64(12345), nil, nil)
-		assert.NoError(t, err)
-		err = c.TrackInsertOne(1, "not_a_testKey3", int64(123456), nil, nil)
-		assert.NoError(t, err)
+	for _, pair := range buildClientPairs(t) {
+		t.Run(pair.name, func(t *testing.T) {
+			err := pair.local.TrackInsertOne(1, "testKey", 1234, nil, nil)
+			require.NoError(t, err)
 
-		keys := []string{"testKey", "testKey_2"}
-		//track get many
-		bucket := bullet_interface.TrackGetKeys{
-			BucketID: 1,
-			Keys:     keys,
-		}
-		buckets := []bullet_interface.TrackGetKeys{bucket}
-		req := bullet_interface.TrackGetManyRequest{
-			Buckets: buckets,
-		}
-		res, err := c.TrackGetMany(req)
-		assert.NoError(t, err)
-		assert.NotNil(t, res)
-		valuesInBucket, ok := res.Values[1]
-		assert.True(t, ok)
-		assert.Equal(t, len(valuesInBucket), 2)
-		assert.Equal(t, valuesInBucket["testKey"].Value, int64(1234))
-		assert.Equal(t, valuesInBucket["testKey_2"].Value, int64(12345))
+			tag := int64(7)
+			metric := 3.5
+			err = pair.rest.TrackInsertOne(1, "testKey_2", 12345, &tag, &metric)
+			require.NoError(t, err)
 
-		//trackgetmany by prefix
+			err = pair.local.TrackInsertOne(1, "not_a_testKey3", 123456, nil, nil)
+			require.NoError(t, err)
 
-		prefixes := []string{"testKey_", "not_"}
-		prefixReq := bullet_interface.TrackGetItemsbyManyPrefixesRequest{
-			BucketID: 1,
-			Prefixes: prefixes,
-		}
-		res, err = c.TrackGetByManyPrefixes(prefixReq)
+			getReq := bullet_interface.TrackGetManyRequest{
+				Buckets: []bullet_interface.TrackGetKeys{
+					{BucketID: 1, Keys: []string{"testKey", "testKey_2", "missing"}},
+				},
+			}
 
-		assert.NoError(t, err)
-		assert.NotNil(t, res)
-		valuesInBucket, ok = res.Values[1]
-		assert.True(t, ok)
-		assert.Equal(t, len(valuesInBucket), 2)
-		assert.Equal(t, valuesInBucket["testKey_2"].Value, int64(12345))
-		assert.Equal(t, valuesInBucket["not_a_testKey3"].Value, int64(123456))
+			localMany, err := pair.local.TrackGetMany(getReq)
+			require.NoError(t, err)
+			restMany, err := pair.rest.TrackGetMany(getReq)
+			require.NoError(t, err)
+			assert.Equal(t, localMany, restMany)
+			assert.Equal(t, int64(1234), restMany.Values[1]["testKey"].Value)
+			assert.Equal(t, int64(12345), restMany.Values[1]["testKey_2"].Value)
+			assert.Equal(t, []string{"missing"}, restMany.Missing["1"])
 
-		//test trackget many
+			prefixReq := bullet_interface.TrackGetItemsbyManyPrefixesRequest{
+				BucketID: 1,
+				Prefixes: []string{"testKey_", "not_"},
+			}
+			localPrefix, err := pair.local.TrackGetByManyPrefixes(prefixReq)
+			require.NoError(t, err)
+			restPrefix, err := pair.rest.TrackGetByManyPrefixes(prefixReq)
+			require.NoError(t, err)
+			assert.Equal(t, localPrefix, restPrefix)
+			assert.Equal(t, int64(12345), restPrefix.Values[1]["testKey_2"].Value)
+			assert.Equal(t, int64(123456), restPrefix.Values[1]["not_a_testKey3"].Value)
 
+			deleteReq := bullet_interface.TrackDeleteMany{
+				Values: []bullet_interface.TrackDeleteValue{
+					{BucketID: 1, Key: "testKey"},
+				},
+			}
+			err = pair.rest.TrackDeleteMany(deleteReq)
+			require.NoError(t, err)
+
+			afterDeleteReq := bullet_interface.TrackGetManyRequest{
+				Buckets: []bullet_interface.TrackGetKeys{
+					{BucketID: 1, Keys: []string{"testKey", "testKey_2"}},
+				},
+			}
+			localAfterDelete, err := pair.local.TrackGetMany(afterDeleteReq)
+			require.NoError(t, err)
+			restAfterDelete, err := pair.rest.TrackGetMany(afterDeleteReq)
+			require.NoError(t, err)
+			assert.Equal(t, localAfterDelete, restAfterDelete)
+			assert.Contains(t, restAfterDelete.Missing["1"], "testKey")
+		})
 	}
-
 }
 
 func TestDepot(t *testing.T) {
-	clients := buildClients()
-	for _, c := range clients {
-		const bucket = int32(1)
+	for _, pair := range buildClientPairs(t) {
+		t.Run(pair.name, func(t *testing.T) {
+			const bucket = int32(1)
 
-		// create one
-		createResp, err := c.DepotCreate(bullet_interface.DepotCreateRequest{BucketID: bucket, Value: "value1"})
-		assert.NoError(t, err)
-		id1 := createResp.ID
+			createResp, err := pair.local.DepotCreate(bullet_interface.DepotCreateRequest{
+				BucketID: bucket,
+				Value:    "value1",
+			})
+			require.NoError(t, err)
+			id1 := createResp.ID
 
-		// create many
-		createManyResp, err := c.DepotCreateMany(bullet_interface.DepotCreateManyRequest{
-			BucketID: bucket,
-			Values:   []string{"value2", "value3"},
+			getResp, err := pair.rest.DepotGetOne(bullet_interface.DepotGetRequest{ID: id1})
+			require.NoError(t, err)
+			assert.Equal(t, "value1", getResp.Value)
+
+			createManyResp, err := pair.rest.DepotCreateMany(bullet_interface.DepotCreateManyRequest{
+				BucketID: bucket,
+				Values:   []string{"value2", "value3"},
+			})
+			require.NoError(t, err)
+			require.Len(t, createManyResp.IDs, 2)
+			id2, id3 := createManyResp.IDs[0], createManyResp.IDs[1]
+
+			err = pair.local.DepotUpdate(bullet_interface.DepotUpdateRequest{ID: id1, Value: "updated_value1"})
+			require.NoError(t, err)
+
+			localMany, err := pair.local.DepotGetMany(bullet_interface.DepotGetManyRequest{IDs: []int64{id1, id3, -999}})
+			require.NoError(t, err)
+			restMany, err := pair.rest.DepotGetMany(bullet_interface.DepotGetManyRequest{IDs: []int64{id1, id3, -999}})
+			require.NoError(t, err)
+			assert.Equal(t, localMany, restMany)
+			assert.Equal(t, "updated_value1", restMany.Values[id1])
+			assert.Equal(t, "value3", restMany.Values[id3])
+
+			localAll, err := pair.local.DepotGetAllByBucket(bullet_interface.DepotBucketRequest{BucketID: bucket})
+			require.NoError(t, err)
+			restAll, err := pair.rest.DepotGetAllByBucket(bullet_interface.DepotBucketRequest{BucketID: bucket})
+			require.NoError(t, err)
+			assert.Equal(t, localAll, restAll)
+			assert.Len(t, restAll.Values, 3)
+
+			err = pair.rest.DepotDelete(bullet_interface.DepotDeleteRequest{ID: id2})
+			require.NoError(t, err)
+
+			localAfterDelete, err := pair.local.DepotGetAllByBucket(bullet_interface.DepotBucketRequest{BucketID: bucket})
+			require.NoError(t, err)
+			restAfterDelete, err := pair.rest.DepotGetAllByBucket(bullet_interface.DepotBucketRequest{BucketID: bucket})
+			require.NoError(t, err)
+			assert.Equal(t, localAfterDelete, restAfterDelete)
+			assert.Len(t, restAfterDelete.Values, 2)
+
+			err = pair.local.DepotDeleteByBucket(bullet_interface.DepotBucketRequest{BucketID: bucket})
+			require.NoError(t, err)
+
+			localAfterBucketDelete, err := pair.local.DepotGetAllByBucket(bullet_interface.DepotBucketRequest{BucketID: bucket})
+			require.NoError(t, err)
+			restAfterBucketDelete, err := pair.rest.DepotGetAllByBucket(bullet_interface.DepotBucketRequest{BucketID: bucket})
+			require.NoError(t, err)
+			assert.Equal(t, localAfterBucketDelete, restAfterBucketDelete)
+			assert.Len(t, restAfterBucketDelete.Values, 0)
 		})
-		assert.NoError(t, err)
-		assert.Equal(t, 2, len(createManyResp.IDs))
-		id2, id3 := createManyResp.IDs[0], createManyResp.IDs[1]
-
-		// update
-		err = c.DepotUpdate(bullet_interface.DepotUpdateRequest{ID: id1, Value: "updated_value1"})
-		assert.NoError(t, err)
-
-		// get one
-		getResp, err := c.DepotGetOne(bullet_interface.DepotGetRequest{ID: id1})
-		assert.NoError(t, err)
-		assert.Equal(t, "updated_value1", getResp.Value)
-
-		// get many (id1, id3, and a nonexistent id)
-		fakeID := int64(-999)
-		getManyResp, err := c.DepotGetMany(bullet_interface.DepotGetManyRequest{IDs: []int64{id1, id3, fakeID}})
-		assert.NoError(t, err)
-		assert.Equal(t, 2, len(getManyResp.Values))
-		assert.Equal(t, 1, len(getManyResp.Missing))
-		assert.Equal(t, "updated_value1", getManyResp.Values[id1])
-		assert.Equal(t, "value3", getManyResp.Values[id3])
-		assert.Equal(t, fakeID, getManyResp.Missing[0])
-
-		// get all by bucket
-		allResp, err := c.DepotGetAllByBucket(bullet_interface.DepotBucketRequest{BucketID: bucket})
-		assert.NoError(t, err)
-		assert.Equal(t, 3, len(allResp.Values))
-
-		// delete one
-		err = c.DepotDelete(bullet_interface.DepotDeleteRequest{ID: id2})
-		assert.NoError(t, err)
-
-		allResp, err = c.DepotGetAllByBucket(bullet_interface.DepotBucketRequest{BucketID: bucket})
-		assert.NoError(t, err)
-		assert.Equal(t, 2, len(allResp.Values))
-
-		// delete by bucket
-		err = c.DepotDeleteByBucket(bullet_interface.DepotBucketRequest{BucketID: bucket})
-		assert.NoError(t, err)
-
-		allResp, err = c.DepotGetAllByBucket(bullet_interface.DepotBucketRequest{BucketID: bucket})
-		assert.NoError(t, err)
-		assert.Equal(t, 0, len(allResp.Values))
-
-		_ = id2 // used above
 	}
-
-}
-
-func buildClientsForGrove(t *testing.T) []bullet_interface.BulletClientInterface {
-	store := ram.NewRamStore()
-	space := store_interface.TenancySpace{
-		AppId:     12,
-		TenancyId: 100,
-	}
-	localClient := &local_bullet.LocalBullet{
-		Store: store,
-		Space: space,
-	}
-	var clients []bullet_interface.BulletClientInterface
-	clients = append(clients, localClient)
-
-	// Use a unique temporary database file for this test run
-	dbPath := filepath.Join(t.TempDir(), fmt.Sprintf("test-sqlite-%d", time.Now().UnixNano()))
-	sqlLiteStore, err := sqlite_store.NewSQLiteStore(dbPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	localSqlClient := &local_bullet.LocalBullet{
-		Store: sqlLiteStore,
-		Space: space,
-	}
-	clients = append(clients, localSqlClient)
-
-	return clients
 }
 
 func TestGrove(t *testing.T) {
-	clients := buildClientsForGrove(t)
-	for _, c := range clients {
-		// Create a simple tree structure:
-		//       root
-		//      /    \
-		//   child1  child2
-		//    /
-		// grandchild1
+	for _, pair := range buildClientPairs(t) {
+		t.Run(pair.name, func(t *testing.T) {
+			treeID := bullet_interface.TreeID("test-tree")
 
-		// Create root node
-		err := c.GroveCreateNode(bullet_interface.GroveCreateNodeRequest{
-			NodeID:   "root",
-			Parent:   nil,
-			Position: nil,
-			Metadata: nil,
-		})
-		assert.NoError(t, err)
+			err := pair.local.GroveCreateNode(bullet_interface.GroveCreateNodeRequest{
+				TreeID: treeID,
+				NodeID: "root",
+			})
+			require.NoError(t, err)
 
-		// Verify root exists
-		existsRes, err := c.GroveExists(bullet_interface.GroveExistsRequest{
-			NodeID: "root",
-		})
-		assert.NoError(t, err)
-		assert.True(t, existsRes.Exists)
+			existsRes, err := pair.rest.GroveExists(bullet_interface.GroveExistsRequest{
+				TreeID: treeID,
+				NodeID: "root",
+			})
+			require.NoError(t, err)
+			assert.True(t, existsRes.Exists)
 
-		// Create child1
-		child1Position := bullet_interface.ChildPosition(1.0)
-		err = c.GroveCreateNode(bullet_interface.GroveCreateNodeRequest{
-			NodeID:   "child1",
-			Parent:   (*bullet_interface.NodeID)(stringPtr("root")),
-			Position: &child1Position,
-			Metadata: nil,
-		})
-		assert.NoError(t, err)
+			child1Position := bullet_interface.ChildPosition(1.0)
+			err = pair.rest.GroveCreateNode(bullet_interface.GroveCreateNodeRequest{
+				TreeID:   treeID,
+				NodeID:   "child1",
+				Parent:   nodeIDPtr("root"),
+				Position: &child1Position,
+			})
+			require.NoError(t, err)
 
-		// Create child2
-		child2Position := bullet_interface.ChildPosition(2.0)
-		err = c.GroveCreateNode(bullet_interface.GroveCreateNodeRequest{
-			NodeID:   "child2",
-			Parent:   (*bullet_interface.NodeID)(stringPtr("root")),
-			Position: &child2Position,
-			Metadata: nil,
-		})
-		assert.NoError(t, err)
+			child2Position := bullet_interface.ChildPosition(2.0)
+			err = pair.local.GroveCreateNode(bullet_interface.GroveCreateNodeRequest{
+				TreeID:   treeID,
+				NodeID:   "child2",
+				Parent:   nodeIDPtr("root"),
+				Position: &child2Position,
+			})
+			require.NoError(t, err)
 
-		// Create grandchild1 under child1
-		grandchild1Position := bullet_interface.ChildPosition(1.0)
-		err = c.GroveCreateNode(bullet_interface.GroveCreateNodeRequest{
-			NodeID:   "grandchild1",
-			Parent:   (*bullet_interface.NodeID)(stringPtr("child1")),
-			Position: &grandchild1Position,
-			Metadata: nil,
-		})
-		assert.NoError(t, err)
+			grandchildPosition := bullet_interface.ChildPosition(1.0)
+			err = pair.rest.GroveCreateNode(bullet_interface.GroveCreateNodeRequest{
+				TreeID:   treeID,
+				NodeID:   "grandchild1",
+				Parent:   nodeIDPtr("child1"),
+				Position: &grandchildPosition,
+			})
+			require.NoError(t, err)
 
-		// Get children of root
-		childrenRes, err := c.GroveGetChildren(bullet_interface.GroveGetChildrenRequest{
-			NodeID:     "root",
-			Pagination: nil,
-		})
-		assert.NoError(t, err)
-		assert.Equal(t, 2, len(childrenRes.Children))
-		assert.Contains(t, childrenRes.Children, bullet_interface.NodeID("child1"))
-		assert.Contains(t, childrenRes.Children, bullet_interface.NodeID("child2"))
+			localChildren, err := pair.local.GroveGetChildren(bullet_interface.GroveGetChildrenRequest{
+				TreeID: treeID,
+				NodeID: "root",
+			})
+			require.NoError(t, err)
+			restChildren, err := pair.rest.GroveGetChildren(bullet_interface.GroveGetChildrenRequest{
+				TreeID: treeID,
+				NodeID: "root",
+			})
+			require.NoError(t, err)
+			assert.Equal(t, localChildren, restChildren)
+			assert.Contains(t, restChildren.Children, bullet_interface.NodeID("child1"))
+			assert.Contains(t, restChildren.Children, bullet_interface.NodeID("child2"))
 
-		// Get children of child1
-		childrenRes, err = c.GroveGetChildren(bullet_interface.GroveGetChildrenRequest{
-			NodeID:     "child1",
-			Pagination: nil,
-		})
-		assert.NoError(t, err)
-		assert.Equal(t, 1, len(childrenRes.Children))
-		assert.Equal(t, bullet_interface.NodeID("grandchild1"), childrenRes.Children[0])
+			localInfo, err := pair.local.GroveGetNodeInfo(bullet_interface.GroveGetNodeInfoRequest{
+				TreeID: treeID,
+				NodeID: "child1",
+			})
+			require.NoError(t, err)
+			restInfo, err := pair.rest.GroveGetNodeInfo(bullet_interface.GroveGetNodeInfoRequest{
+				TreeID: treeID,
+				NodeID: "child1",
+			})
+			require.NoError(t, err)
+			assert.Equal(t, localInfo, restInfo)
 
-		// Get node info for child1
-		nodeInfoRes, err := c.GroveGetNodeInfo(bullet_interface.GroveGetNodeInfoRequest{
-			NodeID: "child1",
-		})
-		assert.NoError(t, err)
-		assert.NotNil(t, nodeInfoRes.NodeInfo)
-		assert.Equal(t, bullet_interface.NodeID("child1"), nodeInfoRes.NodeInfo.ID)
-		assert.Equal(t, bullet_interface.NodeID("root"), *nodeInfoRes.NodeInfo.Parent)
+			localAncestors, err := pair.local.GroveGetAncestors(bullet_interface.GroveGetAncestorsRequest{
+				TreeID: treeID,
+				NodeID: "grandchild1",
+			})
+			require.NoError(t, err)
+			restAncestors, err := pair.rest.GroveGetAncestors(bullet_interface.GroveGetAncestorsRequest{
+				TreeID: treeID,
+				NodeID: "grandchild1",
+			})
+			require.NoError(t, err)
+			assert.ElementsMatch(t, localAncestors.Ancestors, restAncestors.Ancestors)
+			assert.Equal(t, localAncestors.Pagination, restAncestors.Pagination)
 
-		// Get ancestors of grandchild1 (should be child1, root)
-		ancestorsRes, err := c.GroveGetAncestors(bullet_interface.GroveGetAncestorsRequest{
-			NodeID:     "grandchild1",
-			Pagination: nil,
-		})
-		assert.NoError(t, err)
-		assert.Equal(t, 2, len(ancestorsRes.Ancestors))
-		// Ancestors should be [child1, root] or [root, child1] depending on order
-		assert.Contains(t, ancestorsRes.Ancestors, bullet_interface.NodeID("child1"))
-		assert.Contains(t, ancestorsRes.Ancestors, bullet_interface.NodeID("root"))
+			localDescendants, err := pair.local.GroveGetDescendants(bullet_interface.GroveGetDescendantsRequest{
+				TreeID: treeID,
+				NodeID: "root",
+			})
+			require.NoError(t, err)
+			restDescendants, err := pair.rest.GroveGetDescendants(bullet_interface.GroveGetDescendantsRequest{
+				TreeID: treeID,
+				NodeID: "root",
+			})
+			require.NoError(t, err)
+			assert.ElementsMatch(t, localDescendants.Descendants, restDescendants.Descendants)
+			assert.Equal(t, localDescendants.Pagination, restDescendants.Pagination)
+			assert.Len(t, restDescendants.Descendants, 3)
 
-		// Get descendants of root
-		descendantsRes, err := c.GroveGetDescendants(bullet_interface.GroveGetDescendantsRequest{
-			NodeID:  "root",
-			Options: nil,
-		})
-		assert.NoError(t, err)
-		assert.Equal(t, 3, len(descendantsRes.Descendants))
+			err = pair.local.GroveApplyAggregateMutation(bullet_interface.GroveApplyAggregateMutationRequest{
+				TreeID:     treeID,
+				MutationID: "mutation1",
+				NodeID:     "child1",
+				Deltas: bullet_interface.AggregateDeltas{
+					"count": 5,
+				},
+			})
+			require.NoError(t, err)
 
-		// Test aggregates
-		deltas := bullet_interface.AggregateDeltas{
-			"count": 5,
-		}
-		err = c.GroveApplyAggregateMutation(bullet_interface.GroveApplyAggregateMutationRequest{
-			MutationID: "mutation1",
-			NodeID:     "child1",
-			Deltas:     deltas,
-		})
-		assert.NoError(t, err)
+			localLocalAgg, err := pair.local.GroveGetNodeLocalAggregates(bullet_interface.GroveGetNodeLocalAggregatesRequest{
+				TreeID: treeID,
+				NodeID: "child1",
+			})
+			require.NoError(t, err)
+			restLocalAgg, err := pair.rest.GroveGetNodeLocalAggregates(bullet_interface.GroveGetNodeLocalAggregatesRequest{
+				TreeID: treeID,
+				NodeID: "child1",
+			})
+			require.NoError(t, err)
+			assert.Equal(t, localLocalAgg, restLocalAgg)
 
-		// Get local aggregates for child1
-		localAggRes, err := c.GroveGetNodeLocalAggregates(bullet_interface.GroveGetNodeLocalAggregatesRequest{
-			NodeID: "child1",
-		})
-		assert.NoError(t, err)
-		assert.Equal(t, bullet_interface.AggregateValue(5), localAggRes.Aggregates["count"])
+			localSubtreeAgg, err := pair.local.GroveGetNodeWithDescendantsAggregates(bullet_interface.GroveGetNodeWithDescendantsAggregatesRequest{
+				TreeID: treeID,
+				NodeID: "child1",
+			})
+			require.NoError(t, err)
+			restSubtreeAgg, err := pair.rest.GroveGetNodeWithDescendantsAggregates(bullet_interface.GroveGetNodeWithDescendantsAggregatesRequest{
+				TreeID: treeID,
+				NodeID: "child1",
+			})
+			require.NoError(t, err)
+			assert.Equal(t, localSubtreeAgg, restSubtreeAgg)
 
-		// Get aggregates with descendants for child1 (should include grandchild1)
-		withDescAggRes, err := c.GroveGetNodeWithDescendantsAggregates(bullet_interface.GroveGetNodeWithDescendantsAggregatesRequest{
-			NodeID: "child1",
-		})
-		assert.NoError(t, err)
-		assert.Equal(t, bullet_interface.AggregateValue(5), withDescAggRes.Aggregates["count"])
+			err = pair.rest.GroveMoveNode(bullet_interface.GroveMoveNodeRequest{
+				TreeID:      treeID,
+				NodeID:      "grandchild1",
+				NewParent:   nodeIDPtr("child2"),
+				NewPosition: &grandchildPosition,
+			})
+			require.NoError(t, err)
 
-		// Test move node - move grandchild1 to be under child2
-		newPosition := bullet_interface.ChildPosition(1.0)
-		err = c.GroveMoveNode(bullet_interface.GroveMoveNodeRequest{
-			NodeID:      "grandchild1",
-			NewParent:   (*bullet_interface.NodeID)(stringPtr("child2")),
-			NewPosition: &newPosition,
-		})
-		assert.NoError(t, err)
+			localChild2Children, err := pair.local.GroveGetChildren(bullet_interface.GroveGetChildrenRequest{
+				TreeID: treeID,
+				NodeID: "child2",
+			})
+			require.NoError(t, err)
+			restChild2Children, err := pair.rest.GroveGetChildren(bullet_interface.GroveGetChildrenRequest{
+				TreeID: treeID,
+				NodeID: "child2",
+			})
+			require.NoError(t, err)
+			assert.Equal(t, localChild2Children, restChild2Children)
+			assert.Equal(t, []bullet_interface.NodeID{"grandchild1"}, restChild2Children.Children)
 
-		// Verify grandchild1 is now under child2
-		childrenRes, err = c.GroveGetChildren(bullet_interface.GroveGetChildrenRequest{
-			NodeID:     "child2",
-			Pagination: nil,
-		})
-		assert.NoError(t, err)
-		assert.Equal(t, 1, len(childrenRes.Children))
-		assert.Equal(t, bullet_interface.NodeID("grandchild1"), childrenRes.Children[0])
+			bulkNodes := []bullet_interface.NodeID{"child1", "child2", "missing"}
+			localBulkAncestors, err := pair.local.GroveGetAncestorsBulk(bullet_interface.GroveGetAncestorsBulkRequest{
+				TreeID:  treeID,
+				NodeIDs: bulkNodes,
+			})
+			require.NoError(t, err)
+			restBulkAncestors, err := pair.rest.GroveGetAncestorsBulk(bullet_interface.GroveGetAncestorsBulkRequest{
+				TreeID:  treeID,
+				NodeIDs: bulkNodes,
+			})
+			require.NoError(t, err)
+			assert.Equal(t, localBulkAncestors, restBulkAncestors)
 
-		// Delete grandchild1 (soft delete)
-		err = c.GroveDeleteNode(bullet_interface.GroveDeleteNodeRequest{
-			NodeID: "grandchild1",
-			Soft:   true,
-		})
-		assert.NoError(t, err)
+			localBulkLocalAgg, err := pair.local.GroveGetNodeLocalAggregatesBulk(bullet_interface.GroveGetNodeLocalAggregatesBulkRequest{
+				TreeID:  treeID,
+				NodeIDs: bulkNodes,
+			})
+			require.NoError(t, err)
+			restBulkLocalAgg, err := pair.rest.GroveGetNodeLocalAggregatesBulk(bullet_interface.GroveGetNodeLocalAggregatesBulkRequest{
+				TreeID:  treeID,
+				NodeIDs: bulkNodes,
+			})
+			require.NoError(t, err)
+			assert.Equal(t, localBulkLocalAgg, restBulkLocalAgg)
 
-		// Verify grandchild1 no longer exists
-		existsRes, err = c.GroveExists(bullet_interface.GroveExistsRequest{
-			NodeID: "grandchild1",
+			localBulkSubtreeAgg, err := pair.local.GroveGetNodeWithDescendantsAggregatesBulk(bullet_interface.GroveGetNodeWithDescendantsAggregatesBulkRequest{
+				TreeID:  treeID,
+				NodeIDs: bulkNodes,
+			})
+			require.NoError(t, err)
+			restBulkSubtreeAgg, err := pair.rest.GroveGetNodeWithDescendantsAggregatesBulk(bullet_interface.GroveGetNodeWithDescendantsAggregatesBulkRequest{
+				TreeID:  treeID,
+				NodeIDs: bulkNodes,
+			})
+			require.NoError(t, err)
+			assert.Equal(t, localBulkSubtreeAgg, restBulkSubtreeAgg)
+
+			err = pair.local.GroveDeleteNode(bullet_interface.GroveDeleteNodeRequest{
+				TreeID: treeID,
+				NodeID: "grandchild1",
+				Soft:   true,
+			})
+			require.NoError(t, err)
+
+			existsAfterDeleteLocal, err := pair.local.GroveExists(bullet_interface.GroveExistsRequest{
+				TreeID: treeID,
+				NodeID: "grandchild1",
+			})
+			require.NoError(t, err)
+			existsAfterDeleteRest, err := pair.rest.GroveExists(bullet_interface.GroveExistsRequest{
+				TreeID: treeID,
+				NodeID: "grandchild1",
+			})
+			require.NoError(t, err)
+			assert.Equal(t, existsAfterDeleteLocal, existsAfterDeleteRest)
+			assert.False(t, existsAfterDeleteRest.Exists)
 		})
-		assert.NoError(t, err)
-		assert.False(t, existsRes.Exists)
 	}
 }
 
-// Helper function to convert string to *string
-func stringPtr(s string) *string {
-	return &s
+func nodeIDPtr(value string) *bullet_interface.NodeID {
+	nodeID := bullet_interface.NodeID(value)
+	return &nodeID
+}
+
+func Example_buildClientPairs() {
+	fmt.Println("isomorphic client pairs")
 }
