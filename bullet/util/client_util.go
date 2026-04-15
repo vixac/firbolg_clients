@@ -9,11 +9,17 @@ import (
 	"strconv"
 )
 
+// Logger is a minimal interface satisfied by *log.Logger, *testing.T, and similar.
+type Logger interface {
+	Printf(format string, v ...any)
+}
+
 type FirbolgClient struct {
 	BaseURL    string
 	HTTPClient *http.Client
 	AppId      string
 	TenancyId  string
+	Logger     Logger
 }
 
 func NewFirbolgClient(baseURL string, appId int64, tenancyId int64) *FirbolgClient {
@@ -37,6 +43,9 @@ func (c *FirbolgClient) DoJSON(method string, urlSuffix string, body []byte, okS
 	if c.HTTPClient == nil {
 		return nil, fmt.Errorf("HttpClient is nil")
 	}
+	if c.Logger != nil {
+		c.Logger.Printf(">> %s %s body=%s", method, endpoint, string(body))
+	}
 	resp, err := c.HTTPClient.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make resquest: %w", err)
@@ -45,6 +54,9 @@ func (c *FirbolgClient) DoJSON(method string, urlSuffix string, body []byte, okS
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+	if c.Logger != nil {
+		c.Logger.Printf("<< %d body=%s", resp.StatusCode, string(respBody))
 	}
 
 	if len(okStatuses) == 0 {

@@ -42,7 +42,7 @@ func buildClientPairs(t *testing.T) []clientPair {
 				Store: store,
 				Space: space,
 			},
-			rest: rest_bullet.NewRestClientWithHTTPClient(server.URL, space, server.Client()),
+			rest: rest_bullet.NewRestClient(server.URL, space, rest_bullet.WithHTTPClient(server.Client())),
 		}
 	}
 
