@@ -8,6 +8,7 @@ import (
 	bullet_interface "github.com/vixac/firbolg_clients/bullet/bullet_interface"
 )
 
+//VX:TODO test oneway list.
 /*
 A bullet agnostic data structure which allows insertions of subject object (key, value) pairs
 */
@@ -164,7 +165,7 @@ func (l *BulletOneWayList) GetObject(s ListSubject) (*ListObject, error) {
 	}
 
 	if len(itemsInBucket) == 0 {
-		return nil, errors.New("missing item in bucket")
+		return nil, nil
 	}
 	if len(itemsByBucket) > 1 {
 		return nil, errors.New("this two way store got more than 1 item for lookup")
