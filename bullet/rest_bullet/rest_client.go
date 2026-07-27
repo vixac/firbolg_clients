@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/vixac/bullet/store/store_interface"
 	"github.com/vixac/firbolg_clients/bullet/bullet_interface"
 	"github.com/vixac/firbolg_clients/bullet/util"
 )
@@ -32,7 +31,12 @@ func WithLogger(l util.Logger) Option {
 	}
 }
 
-func NewRestClient(baseURL string, space store_interface.TenancySpace, opts ...Option) *RestClient {
+type FirbolgClientenancySpace struct {
+	AppId     int32
+	TenancyId int64
+}
+
+func NewRestClient(baseURL string, space FirbolgClientenancySpace, opts ...Option) *RestClient {
 	fc := util.NewFirbolgClient(strings.TrimRight(baseURL, "/"), int64(space.AppId), space.TenancyId)
 	for _, o := range opts {
 		o(fc)
