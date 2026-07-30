@@ -27,7 +27,7 @@ type clientPair struct {
 func buildClientPairs(t *testing.T) []clientPair {
 	t.Helper()
 
-	space := store_interface.TenancySpace{
+	space := rest_bullet.FirbolgClientenancySpace{
 		AppId:     12,
 		TenancyId: 100,
 	}
@@ -40,7 +40,10 @@ func buildClientPairs(t *testing.T) []clientPair {
 			name: name,
 			local: &local_bullet.LocalBullet{
 				Store: store,
-				Space: space,
+				Space: store_interface.TenancySpace{
+					AppId:     space.AppId,
+					TenancyId: space.TenancyId,
+				},
 			},
 			rest: rest_bullet.NewRestClient(server.URL, space, rest_bullet.WithHTTPClient(server.Client())),
 		}
