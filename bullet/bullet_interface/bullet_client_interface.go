@@ -36,8 +36,17 @@ type GroveClientInterface interface {
 	GroveGetNodeWithDescendantsAggregatesBulk(req GroveGetNodeWithDescendantsAggregatesBulkRequest) (*GroveGetNodeWithDescendantsAggregatesBulkResponse, error)
 }
 
+type LedgerClientInterface interface {
+	LedgerAppend(req LedgerAppendRequest) (*LedgerRecord, error)
+	LedgerAppendMany(req LedgerAppendManyRequest) (*LedgerAppendManyResponse, error)
+	LedgerReadBackward(req LedgerReadBackwardRequest) (*LedgerPage, error)
+	LedgerReadForward(req LedgerReadForwardRequest) (*LedgerReadForwardResponse, error)
+	LedgerDelete(req LedgerDeleteRequest) error
+}
+
 type BulletClientInterface interface {
 	TrackClientInterface
 	DepotClientInterface
 	GroveClientInterface
+	LedgerClientInterface
 }
