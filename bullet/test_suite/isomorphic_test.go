@@ -67,7 +67,58 @@ func newBulletServer(t *testing.T, store store_interface.Store) *httptest.Server
 	api.SetupTrackRouter(store, "/track", engine)
 	api.SetupDepotRouter(store, "/depot", engine)
 	api.SetupGroveRouter(store, "/grove", engine)
+	api.SetupLedgerRouter(store, "/ledger", engine)
 	return httptest.NewServer(engine)
+}
+
+func TestLedger(t *testing.T) {
+	for _, pair := range buildClientPairs(t) {
+		t.Run(pair.name, func(t *testing.T) {
+			localRecord, err := pair.local.LedgerAppend(bullet_interface.LedgerAppendRequest{
+				LedgerID: "orders", AppendID: "order-1", Payload: `{"order":1}`,
+			})
+			require.NoError(t, err)
+			assert.Equal(t, int64(1), localRecord.Position)
+
+			batch, err := pair.rest.LedgerAppendMany(bullet_interface.LedgerAppendManyRequest{
+				LedgerID: "payments",
+				Items: []bullet_interface.LedgerAppendItem{
+					{AppendID: "payment-1", Payload: `{"payment":1}`},
+					{AppendID: "payment-2", Payload: `{"payment":2}`},
+				},
+			})
+			require.NoError(t, err)
+			require.Len(t, batch.Records, 2)
+			assert.Equal(t, int64(2), batch.Records[0].Position)
+			assert.Equal(t, int64(3), batch.Records[1].Position)
+
+			page, err := pair.rest.LedgerReadBackward(bullet_interface.LedgerReadBackwardRequest{
+				LedgerSelector: bullet_interface.LedgerSelector{All: true}, Limit: 2,
+			})
+			require.NoError(t, err)
+			require.Len(t, page.Records, 2)
+			require.NotNil(t, page.NextCursor)
+			assert.Equal(t, int64(3), page.Records[0].Position)
+
+			through := int64(3)
+			forward, err := pair.local.LedgerReadForward(bullet_interface.LedgerReadForwardRequest{
+				LedgerSelector: bullet_interface.LedgerSelector{LedgerIDs: []string{"orders", "payments"}},
+				AfterPosition:  1, ThroughPosition: &through, Limit: 10,
+			})
+			require.NoError(t, err)
+			require.Len(t, forward.Records, 2)
+			assert.Equal(t, int64(2), forward.Records[0].Position)
+			assert.Equal(t, int64(3), forward.Records[1].Position)
+
+			require.NoError(t, pair.rest.LedgerDelete(bullet_interface.LedgerDeleteRequest{LedgerID: "payments"}))
+			remaining, err := pair.local.LedgerReadBackward(bullet_interface.LedgerReadBackwardRequest{
+				LedgerSelector: bullet_interface.LedgerSelector{All: true}, Limit: 10,
+			})
+			require.NoError(t, err)
+			require.Len(t, remaining.Records, 1)
+			assert.Equal(t, "orders", remaining.Records[0].LedgerID)
+		})
+	}
 }
 
 func TestTrack(t *testing.T) {
