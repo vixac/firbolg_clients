@@ -1,5 +1,7 @@
 package bullet_interface
 
+import "errors"
+
 type TrackRequest struct {
 	BucketID int32    `json:"bucketId"`
 	Key      string   `json:"key"`
@@ -35,8 +37,10 @@ type TrackGetItemsbyManyPrefixesRequest struct {
 }
 
 type TrackKeyValueItem struct {
-	Key   string `json:"key"`
-	Value int64  `json:"value"`
+	Key    string   `json:"key"`
+	Value  int64    `json:"value"`
+	Tag    *int64   `json:"tag,omitempty"`
+	Metric *float64 `json:"metric,omitempty"`
 }
 
 type TrackPutItems struct {
@@ -68,3 +72,20 @@ type TrackDeleteValue struct {
 type TrackDeleteMany struct {
 	Values []TrackDeleteValue `json:"items"`
 }
+
+// TrackMutation applies puts and deletes atomically in the client's configured
+// tenancy space. Reusing a mutation ID does not apply the mutation again.
+// Mutation IDs must be unique across the underlying store.
+type TrackMutation struct {
+	MutationID string
+	Puts       []TrackRequest
+	Deletes    []TrackDeleteValue
+}
+
+type TrackMutationResult struct {
+	Applied bool
+}
+
+// ErrTrackMutationUnsupported indicates that the store or transport cannot
+// perform atomic, idempotent track mutations. Bullet v0.2.11 has no REST endpoint.
+var ErrTrackMutationUnsupported = errors.New("track mutations are not supported by this store or transport")

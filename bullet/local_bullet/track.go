@@ -1,7 +1,9 @@
 package local_bullet
 
 import (
+	"errors"
 	"fmt"
+	"github.com/vixac/bullet/store/store_interface"
 
 	"github.com/vixac/bullet/model"
 	"github.com/vixac/firbolg_clients/bullet/bullet_interface"
@@ -149,4 +151,33 @@ func (l *LocalBullet) TrackGetManyByPrefix(req bullet_interface.TrackGetItemsByP
 		Values:  values,
 		Missing: map[string][]string{}, // can't know missing in prefix query
 	}, nil
+}
+
+func (l *LocalBullet) TrackGet(bucketID int32, key string) (int64, error) {
+	return l.Store.TrackGet(l.Space, bucketID, key)
+}
+
+func (l *LocalBullet) TrackPutMany(req bullet_interface.TrackPutManyRequest) error {
+	items := make(map[int32][]model.TrackKeyValueItem)
+	for _, bucket := range req.Buckets {
+		for _, item := range bucket.Items {
+			items[bucket.BucketID] = append(items[bucket.BucketID], model.TrackKeyValueItem{Key: item.Key, Value: model.TrackValue{Value: item.Value, Tag: item.Tag, Metric: item.Metric}})
+		}
+	}
+	return l.Store.TrackPutMany(l.Space, items)
+}
+
+func (l *LocalBullet) TrackMutate(req bullet_interface.TrackMutation) (bullet_interface.TrackMutationResult, error) {
+	mutation := store_interface.TrackMutation{MutationID: store_interface.MutationID(req.MutationID)}
+	for _, put := range req.Puts {
+		mutation.Puts = append(mutation.Puts, store_interface.TrackPut{Space: l.Space, BucketID: put.BucketID, Key: put.Key, Value: put.Value, Tag: put.Tag, Metric: put.Metric})
+	}
+	for _, key := range req.Deletes {
+		mutation.Deletes = append(mutation.Deletes, store_interface.TrackKey{Space: l.Space, BucketID: key.BucketID, Key: key.Key})
+	}
+	result, err := l.Store.TrackMutate(mutation)
+	if errors.Is(err, store_interface.ErrTrackMutationUnsupported) {
+		return bullet_interface.TrackMutationResult{}, bullet_interface.ErrTrackMutationUnsupported
+	}
+	return bullet_interface.TrackMutationResult{Applied: result.Applied}, err
 }
