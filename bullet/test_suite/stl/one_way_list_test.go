@@ -4,24 +4,20 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/vixac/bullet/client"
+	"github.com/vixac/bullet/model"
 	"github.com/vixac/bullet/store/ram"
-	"github.com/vixac/bullet/store/store_interface"
-	"github.com/vixac/firbolg_clients/bullet/bullet_interface"
 	bullet_stl "github.com/vixac/firbolg_clients/bullet/bullet_stl/containers"
 	"github.com/vixac/firbolg_clients/bullet/local_bullet"
 )
 
-func BuildTestClient() bullet_interface.BulletClientInterface {
+func BuildTestClient() client.Client {
 	store := ram.NewRamStore()
-	space := store_interface.TenancySpace{
+	space := model.TenancySpace{
 		AppId:     12,
 		TenancyId: 100,
 	}
-	localClient := &local_bullet.LocalBullet{
-		Store: store,
-		Space: space,
-	}
-	return localClient
+	return local_bullet.NewLocalClient(store, space)
 }
 
 func TestInsertAndDelete(t *testing.T) {

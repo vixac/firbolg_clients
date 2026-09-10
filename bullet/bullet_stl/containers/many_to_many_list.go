@@ -5,7 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	bullet "github.com/vixac/firbolg_clients/bullet/bullet_interface"
+	"github.com/vixac/bullet/client"
+	"github.com/vixac/bullet/model"
 )
 
 // / a way for many to many relationships. It's still using subject -> object notation
@@ -25,14 +26,14 @@ type Mesh interface {
 }
 
 type BulletMesh struct {
-	TrackStore        bullet.TrackClientInterface
+	TrackStore        client.Track
 	BucketId          int32
 	MeshName          string
 	ForwardSeparator  string
 	BackwardSeparator string
 }
 
-func NewBulletMesh(store bullet.TrackClientInterface, bucketId int32, meshName string, forwardSeparator string, backwardSeparator string) (Mesh, error) {
+func NewBulletMesh(store client.Track, bucketId int32, meshName string, forwardSeparator string, backwardSeparator string) (Mesh, error) {
 	//VX:TODO check meshName and upward and downward are all valid wrt eachother
 	return &BulletMesh{
 		TrackStore:        store,
@@ -50,12 +51,12 @@ func (b *BulletMesh) AppendPairs(pairs []ManyToManyPair) error {
 		forwardKey := buildKey(b.MeshName, b.ForwardSeparator, pair.Subject.Value, &objectValue, false)
 		backwardKey := buildKey(b.MeshName, b.BackwardSeparator, pair.Object.Value, &pair.Subject.Value, false)
 		floatMetric := float64(pair.Rank)
-		err := b.TrackStore.TrackInsertOne(b.BucketId, forwardKey, 0, nil, &floatMetric)
+		err := b.TrackStore.TrackPut(b.BucketId, forwardKey, 0, nil, &floatMetric)
 		if err != nil {
 			//VX:Note partial fail, some may have inserted.
 			return err
 		}
-		err = b.TrackStore.TrackInsertOne(b.BucketId, backwardKey, 0, nil, &floatMetric)
+		err = b.TrackStore.TrackPut(b.BucketId, backwardKey, 0, nil, &floatMetric)
 		if err != nil {
 			//VX:Note partial fail, some may have inserted.
 			return err
@@ -73,25 +74,22 @@ func (b *BulletMesh) RemoveObject(object ListObject) error {
 }
 
 func (b *BulletMesh) RemovePairs(pairs []ManyToManyPair) error {
-	var values []bullet.TrackDeleteValue
+	var values []model.TrackKey
 	for _, pair := range pairs {
 		objectValue := pair.Object.Value
 		forwardKey := buildKey(b.MeshName, b.ForwardSeparator, pair.Subject.Value, &objectValue, false)
-		values = append(values, bullet.TrackDeleteValue{
+		values = append(values, model.TrackKey{
 			BucketID: b.BucketId,
 			Key:      forwardKey,
 		})
 		backwardKey := buildKey(b.MeshName, b.BackwardSeparator, pair.Object.Value, &pair.Subject.Value, false)
-		values = append(values, bullet.TrackDeleteValue{
+		values = append(values, model.TrackKey{
 			BucketID: b.BucketId,
 			Key:      backwardKey,
 		})
 	}
 
-	req := bullet.TrackDeleteMany{
-		Values: values,
-	}
-	return b.TrackStore.TrackDeleteMany(req)
+	return b.TrackStore.TrackDeleteMany(values)
 }
 
 func (b *BulletMesh) RemoveSubject(subject ListSubject) error {
@@ -165,36 +163,17 @@ func (b *BulletMesh) AllPairsForManySubjects(subjects []ListSubject) (*PairFetch
 
 func (b *BulletMesh) AllPairsForObject(object ListObject) (*PairFetchResponse, error) {
 	prefixKey := buildKey(b.MeshName, b.BackwardSeparator, object.Value, nil, false)
-	req := bullet.TrackGetItemsByPrefixRequest{
-		BucketID: b.BucketId,
-		Prefix:   prefixKey,
-	}
-	res, err := b.TrackStore.TrackGetManyByPrefix(req)
+	items, err := b.TrackStore.GetItemsByKeyPrefix(b.BucketId, prefixKey, nil, nil, false)
 	if err != nil {
 		return nil, err
 	}
 
-	if res == nil {
+	if len(items) == 0 {
 		return nil, nil
 	}
-
-	if len(res.Values) != 1 {
-		return nil, errors.New("missing bucket in pairs for object")
-	}
-	itemsByBucket := res.Values[b.BucketId]
-	if itemsByBucket == nil {
-		return nil, nil // its ok to get and find nothing
-	}
-
-	//if we're here we assume the object exists, so its an error if its not where we expect it
-	itemsInBucket := make([]string, 0, len(itemsByBucket))
-
-	for k := range itemsByBucket {
-		itemsInBucket = append(itemsInBucket, k)
-	}
-
-	if len(itemsInBucket) == 0 {
-		return nil, errors.New("missing item in bucket")
+	itemsInBucket := make([]string, 0, len(items))
+	for _, item := range items {
+		itemsInBucket = append(itemsInBucket, item.Key)
 	}
 	sort.Strings(itemsInBucket)
 
@@ -224,26 +203,13 @@ func (b *BulletMesh) AllPairsForPrefixSubject(subject ListSubject) (*PairFetchRe
 	return b.allPairsForSubjectimpl(subject, true)
 }
 
-func (b *BulletMesh) readFetchResponse(res *bullet.TrackGetManyResponse) ([]ManyToManyPair, error) {
-	if res == nil {
+func (b *BulletMesh) readFetchResponse(items []model.TrackKeyValueItem) ([]ManyToManyPair, error) {
+	if len(items) == 0 {
 		return nil, nil
 	}
-	if len(res.Values) != 1 {
-		return nil, errors.New("missing bucket from fetch read")
-	}
-	itemsByBucket := res.Values[b.BucketId]
-	if itemsByBucket == nil {
-		return nil, nil // its ok to get and find nothing
-	}
-	//if we're here we assume the object exists, so its an error if its not where we expect it
-	itemsInBucket := make([]string, 0, len(itemsByBucket))
-
-	for k := range itemsByBucket {
-		itemsInBucket = append(itemsInBucket, k)
-	}
-
-	if len(itemsInBucket) == 0 {
-		return nil, errors.New("missing item in bucket")
+	itemsInBucket := make([]string, 0, len(items))
+	for _, item := range items {
+		itemsInBucket = append(itemsInBucket, item.Key)
 	}
 	sort.Strings(itemsInBucket)
 
@@ -276,16 +242,12 @@ func (b *BulletMesh) readFetchResponse(res *bullet.TrackGetManyResponse) ([]Many
 
 func (b *BulletMesh) allPairsForSubjectimpl(subject ListSubject, subjectIsActuallyAPrefix bool) (*PairFetchResponse, error) {
 	prefixKey := buildKey(b.MeshName, b.ForwardSeparator, subject.Value, nil, subjectIsActuallyAPrefix)
-	req := bullet.TrackGetItemsByPrefixRequest{
-		BucketID: b.BucketId,
-		Prefix:   prefixKey,
-	}
-	res, err := b.TrackStore.TrackGetManyByPrefix(req)
+	items, err := b.TrackStore.GetItemsByKeyPrefix(b.BucketId, prefixKey, nil, nil, false)
 	if err != nil {
 		return nil, err
 	}
 
-	pairs, err := b.readFetchResponse(res)
+	pairs, err := b.readFetchResponse(items)
 	if err != nil || pairs == nil {
 		return nil, err
 	}

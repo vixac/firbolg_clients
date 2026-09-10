@@ -1,8 +1,6 @@
 package bullet_stl
 
-import (
-	bullet_client "github.com/vixac/firbolg_clients/bullet/bullet_interface"
-)
+import "github.com/vixac/bullet/client"
 
 /*
 *A bullet agnostic data structure which allows insertions of subject object (key, value) pairs. It's 1->1, so both sides are considered primary keys.
@@ -24,7 +22,7 @@ type TwoWayListImpl struct {
 }
 
 // just a convenience, becuase TwoWay is bullet agnostic.
-func NewBulletTwoWayList(store bullet_client.TrackClientInterface, bucketId int32, listName string, forwardSeparator string, backwardSeparator string) (*TwoWayListImpl, error) {
+func NewBulletTwoWayList(store client.Track, bucketId int32, listName string, forwardSeparator string, backwardSeparator string) (*TwoWayListImpl, error) {
 	forwardList, err := NewBulletOneWayList(store, bucketId, listName, forwardSeparator)
 	if err != nil {
 		return nil, err

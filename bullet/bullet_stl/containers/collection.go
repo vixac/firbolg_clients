@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	bullet_interface "github.com/vixac/firbolg_clients/bullet/bullet_interface"
+	"github.com/vixac/bullet/client"
+	"github.com/vixac/bullet/model"
 )
 
 /*
@@ -34,12 +35,12 @@ type CollectionId struct {
 }
 
 type BulletCollection struct {
-	TrackStore bullet_interface.TrackClientInterface
-	DepotStore bullet_interface.DepotClientInterface
+	TrackStore client.Track
+	DepotStore client.Depot
 	BucketId   int32
 }
 
-func NewBulletCollection(bucket int32, track bullet_interface.TrackClientInterface, depot bullet_interface.DepotClientInterface) Collection {
+func NewBulletCollection(bucket int32, track client.Track, depot client.Depot) Collection {
 	return &BulletCollection{
 		TrackStore: track,
 		DepotStore: depot,
@@ -48,11 +49,7 @@ func NewBulletCollection(bucket int32, track bullet_interface.TrackClientInterfa
 }
 
 func (b *BulletCollection) CreateItemUnder(key string, payload string, updateTime *time.Time) (*CollectionId, error) {
-	depotReq := bullet_interface.DepotCreateRequest{
-		BucketID: b.BucketId,
-		Value:    payload,
-	}
-	depotResponse, err := b.DepotStore.DepotCreate(depotReq)
+	depotID, err := b.DepotStore.DepotCreate(b.BucketId, payload)
 	if err != nil {
 		return nil, err
 	}
@@ -61,24 +58,21 @@ func (b *BulletCollection) CreateItemUnder(key string, payload string, updateTim
 		updateUnix := float64(updateTime.Unix())
 		updateTimeUnix = &updateUnix
 	}
-	err = b.TrackStore.TrackInsertOne(b.BucketId, key, depotResponse.ID, nil, updateTimeUnix)
+	err = b.TrackStore.TrackPut(b.BucketId, key, depotID, nil, updateTimeUnix)
 	if err != nil {
-		fmt.Printf("VX: Warn this is an inconsistent state. We have an orphan depot item: %d\n", depotResponse.ID)
+		fmt.Printf("VX: Warn this is an inconsistent state. We have an orphan depot item: %d\n", depotID)
 		return nil, err
 	}
 	collectionId := CollectionId{
 		Bucket:  b.BucketId,
-		DepotId: depotResponse.ID,
+		DepotId: depotID,
 		Key:     key,
 	}
 	return &collectionId, nil
 }
 
 func (b *BulletCollection) EditPayload(id CollectionId, payload string, updateTime *time.Time) error {
-	err := b.DepotStore.DepotUpdate(bullet_interface.DepotUpdateRequest{
-		ID:    id.DepotId,
-		Value: payload,
-	})
+	err := b.DepotStore.DepotUpdate(id.DepotId, payload)
 	if err != nil {
 		return err
 	}
@@ -88,7 +82,7 @@ func (b *BulletCollection) EditPayload(id CollectionId, payload string, updateTi
 		updateUnix := float64(updateTime.Unix())
 		updateTimeUnix = &updateUnix
 	}
-	return b.TrackStore.TrackInsertOne(b.BucketId, id.Key, id.DepotId, nil, updateTimeUnix)
+	return b.TrackStore.TrackPut(b.BucketId, id.Key, id.DepotId, nil, updateTimeUnix)
 }
 
 func (b *BulletCollection) AllItems() (map[CollectionId]string, error) {
@@ -109,31 +103,27 @@ type trackMeta struct {
 	Metric *float64
 }
 
-func (b *BulletCollection) fetchItemsFor(res *bullet_interface.TrackGetManyResponse) (map[CollectionId]CollectionItem, error) {
-	bucket, ok := res.Values[b.BucketId]
-	if !ok {
+func (b *BulletCollection) fetchItemsFor(items []model.TrackKeyValueItem) (map[CollectionId]CollectionItem, error) {
+	if len(items) == 0 {
 		return nil, nil
 	}
 	var depotIds []int64
 	depotIdsToMeta := make(map[int64]trackMeta)
-	for k, v := range bucket {
-		depotIds = append(depotIds, v.Value)
-		depotIdsToMeta[v.Value] = trackMeta{Key: k, Tag: v.Tag, Metric: v.Metric}
+	for _, item := range items {
+		depotIds = append(depotIds, item.Value.Value)
+		depotIdsToMeta[item.Value.Value] = trackMeta{Key: item.Key, Tag: item.Value.Tag, Metric: item.Value.Metric}
 	}
 
-	manyReq := bullet_interface.DepotGetManyRequest{
-		IDs: depotIds,
-	}
-	depotRes, err := b.DepotStore.DepotGetMany(manyReq)
-	if err != nil || depotRes == nil {
+	values, missing, err := b.DepotStore.DepotGetMany(depotIds)
+	if err != nil {
 		return nil, err
 	}
-	if len(depotRes.Missing) > 0 {
-		fmt.Printf("VX: WARN there are %d missing Ids in this collection. \n", len(depotRes.Missing))
+	if len(missing) > 0 {
+		fmt.Printf("VX: WARN there are %d missing Ids in this collection. \n", len(missing))
 	}
 
 	result := make(map[CollectionId]CollectionItem)
-	for k, payload := range depotRes.Values {
+	for k, payload := range values {
 		meta := depotIdsToMeta[k]
 		col := CollectionId{
 			Bucket:  b.BucketId,
@@ -150,64 +140,47 @@ func (b *BulletCollection) fetchItemsFor(res *bullet_interface.TrackGetManyRespo
 }
 
 func (b *BulletCollection) AllItemsUnderPrefixes(prefixes []string) (map[CollectionId]CollectionItem, error) {
-	trackReq := bullet_interface.TrackGetItemsbyManyPrefixesRequest{
-		BucketID: b.BucketId,
-		Prefixes: prefixes,
-	}
-
-	//use track to get all the ids that fall under this collection.
-	res, err := b.TrackStore.TrackGetByManyPrefixes(trackReq)
-	if err != nil || res == nil {
+	items, err := b.TrackStore.GetItemsByKeyPrefixes(b.BucketId, prefixes, nil, nil, false)
+	if err != nil {
 		return nil, err
 	}
-	return b.fetchItemsFor(res)
+	return b.fetchItemsFor(items)
 }
 
 func (b *BulletCollection) AllItemsUnderPrefix(prefix string) (map[CollectionId]CollectionItem, error) {
-	trackReq := bullet_interface.TrackGetItemsByPrefixRequest{
-		BucketID: b.BucketId,
-		Prefix:   prefix,
-	}
-
-	//use track to get all the ids that fall under this collection.
-	res, err := b.TrackStore.TrackGetManyByPrefix(trackReq)
-	if err != nil || res == nil {
+	items, err := b.TrackStore.GetItemsByKeyPrefix(b.BucketId, prefix, nil, nil, false)
+	if err != nil {
 		return nil, err
 	}
-
-	return b.fetchItemsFor(res)
+	return b.fetchItemsFor(items)
 }
 
 func (b *BulletCollection) ItemsForKeys(keys []string) (map[CollectionId]CollectionItem, error) {
-	req := bullet_interface.TrackGetManyRequest{
-		Buckets: []bullet_interface.TrackGetKeys{
-			{BucketID: b.BucketId, Keys: keys},
-		},
-	}
-	res, err := b.TrackStore.TrackGetMany(req)
-	if err != nil || res == nil {
+	values, _, err := b.TrackStore.TrackGetMany(map[int32][]string{b.BucketId: keys})
+	if err != nil {
 		return nil, err
 	}
-	return b.fetchItemsFor(res)
+	items := make([]model.TrackKeyValueItem, 0, len(values[b.BucketId]))
+	for key, value := range values[b.BucketId] {
+		items = append(items, model.TrackKeyValueItem{Key: key, Value: value})
+	}
+	return b.fetchItemsFor(items)
 }
 
 func (b *BulletCollection) DeleteItems(ids []CollectionId) error {
 	// Delete depot first: if track delete fails, orphaned track entries are the less bad edge case
 	for _, v := range ids {
-		req := bullet_interface.DepotDeleteRequest{
-			ID: v.DepotId,
-		}
-		err := b.DepotStore.DepotDelete(req)
+		err := b.DepotStore.DepotDelete(v.DepotId)
 		if err != nil {
 			return err
 		}
 	}
-	var trackDeletes []bullet_interface.TrackDeleteValue
+	var trackDeletes []model.TrackKey
 	for _, v := range ids {
-		trackDeletes = append(trackDeletes, bullet_interface.TrackDeleteValue{
+		trackDeletes = append(trackDeletes, model.TrackKey{
 			BucketID: b.BucketId,
 			Key:      v.Key,
 		})
 	}
-	return b.TrackStore.TrackDeleteMany(bullet_interface.TrackDeleteMany{Values: trackDeletes})
+	return b.TrackStore.TrackDeleteMany(trackDeletes)
 }

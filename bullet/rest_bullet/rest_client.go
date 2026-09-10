@@ -1,45 +1,16 @@
+// Package rest_bullet provides legacy constructor names for Bullet's REST client.
 package rest_bullet
 
 import (
-	"net/http"
-	"strings"
-
-	"github.com/vixac/firbolg_clients/bullet/bullet_interface"
-	"github.com/vixac/firbolg_clients/bullet/util"
+	bullet_rest "github.com/vixac/bullet/client/rest"
+	"github.com/vixac/bullet/model"
 )
 
-var _ bullet_interface.BulletClientInterface = (*RestClient)(nil)
+type Option = bullet_rest.Option
 
-type RestClient struct {
-	*util.FirbolgClient
-}
+var WithHTTPClient = bullet_rest.WithHTTPClient
+var WithLogger = bullet_rest.WithLogger
 
-// Option configures a RestClient.
-type Option func(*util.FirbolgClient)
-
-// WithHTTPClient sets a custom HTTP client.
-func WithHTTPClient(c *http.Client) Option {
-	return func(f *util.FirbolgClient) {
-		f.HTTPClient = c
-	}
-}
-
-// WithLogger sets a logger that will print each request and response.
-func WithLogger(l util.Logger) Option {
-	return func(f *util.FirbolgClient) {
-		f.Logger = l
-	}
-}
-
-type FirbolgClientenancySpace struct {
-	AppId     int32
-	TenancyId int64
-}
-
-func NewRestClient(baseURL string, space FirbolgClientenancySpace, opts ...Option) *RestClient {
-	fc := util.NewFirbolgClient(strings.TrimRight(baseURL, "/"), int64(space.AppId), space.TenancyId)
-	for _, o := range opts {
-		o(fc)
-	}
-	return &RestClient{FirbolgClient: fc}
+func NewRestClient(baseURL string, space model.TenancySpace, opts ...Option) *bullet_rest.Client {
+	return bullet_rest.New(baseURL, space, opts...)
 }
