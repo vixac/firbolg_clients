@@ -5,7 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	bullet "github.com/vixac/firbolg_clients/bullet/bullet_interface"
+	"github.com/vixac/bullet/client"
+	"github.com/vixac/bullet/model"
 )
 
 type ManyToManyPair struct {
@@ -29,13 +30,13 @@ type ForwardMesh interface {
 //I *think* this can be handled with twoWay lists? not sure. not.
 
 type BulletForwardMesh struct {
-	TrackStore bullet.TrackClientInterface
+	TrackStore client.Track
 	BucketId   int32
 	MeshName   string
 	Separator  string
 }
 
-func NewBulletForwardMesh(store bullet.TrackClientInterface, bucketId int32, meshName string, separator string) (ForwardMesh, error) {
+func NewBulletForwardMesh(store client.Track, bucketId int32, meshName string, separator string) (ForwardMesh, error) {
 	//VX:TODO check meshName and upward and downward are all valid wrt eachother
 	return &BulletForwardMesh{
 		TrackStore: store,
@@ -52,7 +53,7 @@ func (b *BulletForwardMesh) AppendPairs(pairs []ManyToManyPair) error {
 		objectValue := pair.Object.Value
 		key := buildKey(b.MeshName, b.Separator, pair.Subject.Value, &objectValue, false)
 		floatMetric := float64(pair.Rank)
-		err := b.TrackStore.TrackInsertOne(b.BucketId, key, 0, nil, &floatMetric)
+		err := b.TrackStore.TrackPut(b.BucketId, key, 0, nil, &floatMetric)
 		if err != nil {
 			//VX:Note partial fail, some may have inserted.
 			return err
@@ -62,20 +63,17 @@ func (b *BulletForwardMesh) AppendPairs(pairs []ManyToManyPair) error {
 }
 
 func (b *BulletForwardMesh) RemovePairs(pairs []ManyToManyPair) error {
-	var values []bullet.TrackDeleteValue
+	var values []model.TrackKey
 	for _, pair := range pairs {
 		objectValue := pair.Object.Value
 		key := buildKey(b.MeshName, b.Separator, pair.Subject.Value, &objectValue, false)
-		values = append(values, bullet.TrackDeleteValue{
+		values = append(values, model.TrackKey{
 			BucketID: b.BucketId,
 			Key:      key,
 		})
 	}
 
-	req := bullet.TrackDeleteMany{
-		Values: values,
-	}
-	return b.TrackStore.TrackDeleteMany(req)
+	return b.TrackStore.TrackDeleteMany(values)
 }
 
 func (b *BulletForwardMesh) RemoveSubject(subject ListSubject) error {
@@ -96,37 +94,19 @@ func (b *BulletForwardMesh) AllPairsForSubject(subject ListSubject) (*PairFetchR
 
 func (b *BulletForwardMesh) allPairsForSubjectImpl(subject ListSubject, subjectIsActuallyAPrefix bool) (*PairFetchResponse, error) {
 	prefixKey := buildKey(b.MeshName, b.Separator, subject.Value, nil, subjectIsActuallyAPrefix)
-	req := bullet.TrackGetItemsByPrefixRequest{
-		BucketID: b.BucketId,
-		Prefix:   prefixKey,
-	}
-	res, err := b.TrackStore.TrackGetManyByPrefix(req)
+	items, err := b.TrackStore.GetItemsByKeyPrefix(b.BucketId, prefixKey, nil, nil, false)
 	if err != nil {
 		return nil, err
 	}
 	if err != nil {
 		return nil, err
 	}
-	if res == nil {
+	if len(items) == 0 {
 		return nil, nil
 	}
-	if len(res.Values) != 1 {
-		return nil, errors.New("missing bucket")
-	}
-	itemsByBucket := res.Values[b.BucketId]
-	if itemsByBucket == nil {
-		return nil, nil // its ok to get and find nothing
-	}
-
-	//if we're here we assume the object exists, so its an error if its not where we expect it
-	itemsInBucket := make([]string, 0, len(itemsByBucket))
-
-	for k := range itemsByBucket {
-		itemsInBucket = append(itemsInBucket, k)
-	}
-
-	if len(itemsInBucket) == 0 {
-		return nil, errors.New("missing item in bucket")
+	itemsInBucket := make([]string, 0, len(items))
+	for _, item := range items {
+		itemsInBucket = append(itemsInBucket, item.Key)
 	}
 	sort.Strings(itemsInBucket)
 

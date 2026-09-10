@@ -1,14 +1,12 @@
+// Package local_bullet provides the legacy constructor name for Bullet's local client.
 package local_bullet
 
 import (
+	bullet_local "github.com/vixac/bullet/client/local"
+	"github.com/vixac/bullet/model"
 	"github.com/vixac/bullet/store/store_interface"
 )
 
-/*
-Local bullet is an implemtnation of BulletClientInterface that uses a local implemetnation of store, so no network calls required.
-WayFinder is no longer part of Store in v0.2.0; provide a WayFinderStore implementation separately if needed.
-*/
-type LocalBullet struct {
-	Store store_interface.Store
-	Space store_interface.TenancySpace
+func NewLocalClient(store store_interface.Store, space model.TenancySpace) *bullet_local.Client {
+	return bullet_local.New(store, space)
 }
