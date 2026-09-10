@@ -45,6 +45,7 @@ type LedgerClientInterface interface {
 }
 
 type BulletClientInterface interface {
+	WarehouseClientInterface
 	TrackClientInterface
 	DepotClientInterface
 	GroveClientInterface
