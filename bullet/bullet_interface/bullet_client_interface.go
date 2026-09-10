@@ -12,6 +12,9 @@ type DepotClientInterface interface {
 }
 
 type TrackClientInterface interface {
+	TrackGet(bucketID int32, key string) (int64, error)
+	TrackPutMany(req TrackPutManyRequest) error
+	TrackMutate(req TrackMutation) (TrackMutationResult, error)
 	TrackGetMany(req TrackGetManyRequest) (*TrackGetManyResponse, error)
 	TrackInsertOne(bucketID int32, key string, value int64, tag *int64, metric *float64) error
 	TrackDeleteMany(req TrackDeleteMany) error

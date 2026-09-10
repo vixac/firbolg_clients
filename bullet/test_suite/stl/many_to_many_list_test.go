@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	bullet_stl "github.com/vixac/firbolg_clients/bullet/bullet_stl/containers"
 )
 
@@ -71,7 +72,10 @@ func TestManyToManyInsertAndDelete(t *testing.T) {
 
 	//delete churchill
 
-	err = mesh.RemoveObject(bullet_stl.ListObject{Value: "churchill"})
+	churchillsLanguages, err = mesh.AllPairsForObject(bullet_stl.ListObject{Value: "churchill"})
+	require.NoError(t, err)
+	require.NotNil(t, churchillsLanguages)
+	err = mesh.RemovePairs(churchillsLanguages.Pairs)
 	assert.NoError(t, err)
 
 	//find english, only newton
@@ -86,14 +90,20 @@ func TestManyToManyInsertAndDelete(t *testing.T) {
 	assert.Equal(t, len(foundObjects.Pairs), 1)
 	assert.Equal(t, foundObjects.Pairs[0].Object.Value, "napoleon")
 
-	err = mesh.RemoveSubject(italian)
+	foundObjects, err = mesh.AllPairsForSubject(italian)
+	require.NoError(t, err)
+	require.NotNil(t, foundObjects)
+	err = mesh.RemovePairs(foundObjects.Pairs)
 	assert.NoError(t, err)
 	foundObjects, err = mesh.AllPairsForSubject(italian)
 	assert.NoError(t, err)
 	assert.True(t, foundObjects == nil)
 
 	//remove english
-	err = mesh.RemoveSubject(english)
+	foundObjects, err = mesh.AllPairsForSubject(english)
+	require.NoError(t, err)
+	require.NotNil(t, foundObjects)
+	err = mesh.RemovePairs(foundObjects.Pairs)
 	assert.NoError(t, err)
 
 	foundObjects, err = mesh.AllPairsForSubject(english)

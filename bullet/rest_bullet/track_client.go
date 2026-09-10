@@ -141,3 +141,46 @@ func convertTrackGetManyResponse(apiResp bullet_model.TrackGetManyResponse) (*bu
 		Missing: apiResp.Missing,
 	}, nil
 }
+
+func (c *RestClient) TrackGet(bucketID int32, key string) (int64, error) {
+	body, err := util.MarshalJSONBody(bullet_interface.TrackDeleteValue{BucketID: bucketID, Key: key})
+	if err != nil {
+		return 0, err
+	}
+	data, err := c.PostReq("/track/items/get", body, http.StatusOK)
+	if err != nil {
+		return 0, fmt.Errorf("TrackGet request failed: %w", err)
+	}
+	var response struct {
+		Value int64 `json:"value"`
+	}
+	if err := json.Unmarshal(data, &response); err != nil {
+		return 0, fmt.Errorf("failed to unmarshal TrackGet response: %w", err)
+	}
+	return response.Value, nil
+}
+
+func (c *RestClient) TrackPutMany(req bullet_interface.TrackPutManyRequest) error {
+	wire := bullet_model.TrackPutManyRequest{Buckets: make([]bullet_model.TrackPutItems, 0, len(req.Buckets))}
+	for _, bucket := range req.Buckets {
+		items := make([]bullet_model.TrackKeyValueItem, 0, len(bucket.Items))
+		for _, item := range bucket.Items {
+			items = append(items, bullet_model.TrackKeyValueItem{Key: item.Key, Value: bullet_model.TrackValue{Value: item.Value, Tag: item.Tag, Metric: item.Metric}})
+		}
+		wire.Buckets = append(wire.Buckets, bullet_model.TrackPutItems{BucketID: bucket.BucketID, Items: items})
+	}
+	body, err := util.MarshalJSONBody(wire)
+	if err != nil {
+		return err
+	}
+	_, err = c.PostReq("/track/items/batch", body, http.StatusOK)
+	if err != nil {
+		return fmt.Errorf("TrackPutMany request failed: %w", err)
+	}
+	return nil
+}
+
+// TrackMutate requires an upstream mutation endpoint, absent in Bullet v0.2.11.
+func (c *RestClient) TrackMutate(req bullet_interface.TrackMutation) (bullet_interface.TrackMutationResult, error) {
+	return bullet_interface.TrackMutationResult{}, bullet_interface.ErrTrackMutationUnsupported
+}
