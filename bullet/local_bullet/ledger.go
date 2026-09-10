@@ -28,7 +28,7 @@ func ledgerSelector(selector bullet_interface.LedgerSelector) store_interface.Le
 	for i, id := range selector.LedgerIDs {
 		ids[i] = store_interface.LedgerID(id)
 	}
-	return store_interface.LedgerSelector{All: selector.All, LedgerIDs: ids}
+	return store_interface.LedgerSelector{All: selector.All, LedgerIDs: ids, Prefix: selector.Prefix}
 }
 
 func (l *LocalBullet) LedgerAppend(req bullet_interface.LedgerAppendRequest) (*bullet_interface.LedgerRecord, error) {

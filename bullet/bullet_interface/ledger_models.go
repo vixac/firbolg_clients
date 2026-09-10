@@ -18,9 +18,11 @@ type LedgerAppendManyRequest struct {
 	Items    []LedgerAppendItem `json:"items"`
 }
 
+// LedgerSelector selects exactly one of All, LedgerIDs, or a non-empty Prefix.
 type LedgerSelector struct {
 	All       bool     `json:"all"`
 	LedgerIDs []string `json:"ledger_ids,omitempty"`
+	Prefix    string   `json:"prefix,omitempty"`
 }
 
 type LedgerReadBackwardRequest struct {
