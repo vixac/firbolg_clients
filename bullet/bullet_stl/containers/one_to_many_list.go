@@ -22,7 +22,6 @@ type PairFetchResponse struct {
 type ForwardMesh interface {
 	AppendPairs(pairs []ManyToManyPair) error
 	RemovePairs(pairs []ManyToManyPair) error
-	RemoveSubject(subject ListSubject) error
 	AllPairsForSubject(subject ListSubject) (*PairFetchResponse, error)
 	AllPairsForPrefixSubject(subject ListSubject) (*PairFetchResponse, error)
 }
@@ -74,14 +73,6 @@ func (b *BulletForwardMesh) RemovePairs(pairs []ManyToManyPair) error {
 	}
 
 	return b.TrackStore.TrackDeleteMany(values)
-}
-
-func (b *BulletForwardMesh) RemoveSubject(subject ListSubject) error {
-	allPairs, err := b.AllPairsForSubject(subject)
-	if err != nil {
-		return nil
-	}
-	return b.RemovePairs(allPairs.Pairs)
 }
 
 func (b *BulletForwardMesh) AllPairsForPrefixSubject(subject ListSubject) (*PairFetchResponse, error) {

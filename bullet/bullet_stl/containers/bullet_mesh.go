@@ -9,22 +9,10 @@ import (
 	"github.com/vixac/bullet/model"
 )
 
-// / a way for many to many relationships. It's still using subject -> object notation
-// / so the subjet namespaces and object namespaces are considered separate, but they
-// can contain the same ids for example a->b, a->c, and a->a are fine,
-// they have complimentary keys b<-a, c<-a, and a<-a. Mesh takes twice the storage of ForwardMesh for that reason.
-type Mesh interface {
-	AppendPairs(pairs []ManyToManyPair) error
-	RemovePairs(pairs []ManyToManyPair) error
-	RemoveSubject(subject ListSubject) error
-	RemoveObject(object ListObject) error
-	AllPairsForSubject(subject ListSubject) (*PairFetchResponse, error)
-	AllPairsForManySubjects(subject []ListSubject) (*PairFetchResponse, error)
-	AllPairsForPrefixSubject(subject ListSubject) (*PairFetchResponse, error)
-	AllPairsForObject(object ListObject) (*PairFetchResponse, error)
-	AllPairsForManyObjects(objects []ListObject) (*PairFetchResponse, error)
-}
-
+/*
+*
+Warn: This is deprecated as its a slower non-atomic implementation of Mesh.
+*/
 type BulletMesh struct {
 	TrackStore        client.Track
 	BucketId          int32
@@ -65,14 +53,6 @@ func (b *BulletMesh) AppendPairs(pairs []ManyToManyPair) error {
 	return nil
 }
 
-func (b *BulletMesh) RemoveObject(object ListObject) error {
-	pairs, err := b.AllPairsForObject(object)
-	if err != nil {
-		return err
-	}
-	return b.RemovePairs(pairs.Pairs)
-}
-
 func (b *BulletMesh) RemovePairs(pairs []ManyToManyPair) error {
 	var values []model.TrackKey
 	for _, pair := range pairs {
@@ -90,15 +70,6 @@ func (b *BulletMesh) RemovePairs(pairs []ManyToManyPair) error {
 	}
 
 	return b.TrackStore.TrackDeleteMany(values)
-}
-
-func (b *BulletMesh) RemoveSubject(subject ListSubject) error {
-	allPairs, err := b.AllPairsForSubject(subject)
-	if err != nil {
-		return nil
-	}
-
-	return b.RemovePairs(allPairs.Pairs)
 }
 
 func (b *BulletMesh) AllPairsForManyObjects(objects []ListObject) (*PairFetchResponse, error) {
