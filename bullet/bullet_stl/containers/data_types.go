@@ -14,3 +14,9 @@ func (o ListObject) Invert() ListSubject {
 type ListObject struct {
 	Value string
 }
+
+type ManyToManyPair struct {
+	Subject ListSubject //the item above
+	Object  ListObject  //the item below
+	Rank    int32       //just metadata for the user
+}

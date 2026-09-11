@@ -9,12 +9,6 @@ import (
 	"github.com/vixac/bullet/model"
 )
 
-type ManyToManyPair struct {
-	Subject ListSubject //the item above
-	Object  ListObject  //the item below
-	Rank    int32       //just metadata for the user
-}
-
 type PairFetchResponse struct {
 	Pairs []ManyToManyPair
 }

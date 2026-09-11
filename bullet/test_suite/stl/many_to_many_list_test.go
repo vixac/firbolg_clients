@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	bullet_stl "github.com/vixac/firbolg_clients/bullet/bullet_stl/containers"
+	atomic "github.com/vixac/firbolg_clients/bullet/bullet_stl/containers/atomic"
 )
 
 func forEachMesh(t *testing.T, test func(t *testing.T, mesh bullet_stl.Mesh)) {
@@ -15,7 +16,7 @@ func forEachMesh(t *testing.T, test func(t *testing.T, mesh bullet_stl.Mesh)) {
 			return bullet_stl.NewBulletMesh(BuildTestClient(), 42, "test_many_mesh", ">", "<")
 		},
 		"AtomicMesh": func() (bullet_stl.Mesh, error) {
-			return bullet_stl.NewAtomicMesh(BuildTestClient(), 42, "test_many_mesh", ">", "<")
+			return atomic.NewAtomicMesh(BuildTestClient(), 42, "test_many_mesh", ">", "<")
 		},
 	}
 	for name, newMesh := range implementations {

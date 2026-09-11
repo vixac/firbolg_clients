@@ -10,6 +10,7 @@ import (
 
 	"github.com/vixac/bullet/client"
 	"github.com/vixac/bullet/model"
+	bullet_stl "github.com/vixac/firbolg_clients/bullet/bullet_stl/containers"
 )
 
 // AtomicMesh implements Mesh using one atomic Track operation per Mesh method.
@@ -29,9 +30,9 @@ type AtomicMesh struct {
 	BackwardSeparator string
 }
 
-var _ Mesh = (*AtomicMesh)(nil)
+var _ bullet_stl.Mesh = (*AtomicMesh)(nil)
 
-func NewAtomicMesh(store client.Track, bucketID int32, meshName, forwardSeparator, backwardSeparator string) (Mesh, error) {
+func NewAtomicMesh(store client.Track, bucketID int32, meshName, forwardSeparator, backwardSeparator string) (bullet_stl.Mesh, error) {
 	return &AtomicMesh{
 		TrackStore:        store,
 		BucketId:          bucketID,
@@ -41,7 +42,7 @@ func NewAtomicMesh(store client.Track, bucketID int32, meshName, forwardSeparato
 	}, nil
 }
 
-func (m *AtomicMesh) AppendPairs(pairs []ManyToManyPair) error {
+func (m *AtomicMesh) AppendPairs(pairs []bullet_stl.ManyToManyPair) error {
 	if len(pairs) == 0 {
 		return nil
 	}
@@ -62,7 +63,7 @@ func (m *AtomicMesh) AppendPairs(pairs []ManyToManyPair) error {
 	return m.applyMutation(mutation)
 }
 
-func (m *AtomicMesh) RemovePairs(pairs []ManyToManyPair) error {
+func (m *AtomicMesh) RemovePairs(pairs []bullet_stl.ManyToManyPair) error {
 	if len(pairs) == 0 {
 		return nil
 	}
@@ -82,7 +83,7 @@ func (m *AtomicMesh) RemovePairs(pairs []ManyToManyPair) error {
 	return m.applyMutation(mutation)
 }
 
-func (m *AtomicMesh) AllPairsForManySubjects(subjects []ListSubject) (*PairFetchResponse, error) {
+func (m *AtomicMesh) AllPairsForManySubjects(subjects []bullet_stl.ListSubject) (*bullet_stl.PairFetchResponse, error) {
 	prefixes := make([]string, 0, len(subjects))
 	for _, subject := range subjects {
 		prefixes = append(prefixes, buildKey(m.MeshName, m.ForwardSeparator, subject.Value, nil, false))
@@ -95,22 +96,22 @@ func (m *AtomicMesh) AllPairsForManySubjects(subjects []ListSubject) (*PairFetch
 	if err != nil || len(pairs) == 0 {
 		return nil, err
 	}
-	return &PairFetchResponse{Pairs: pairs}, nil
+	return &bullet_stl.PairFetchResponse{Pairs: pairs}, nil
 }
 
-func (m *AtomicMesh) AllPairsForSubject(subject ListSubject) (*PairFetchResponse, error) {
+func (m *AtomicMesh) AllPairsForSubject(subject bullet_stl.ListSubject) (*bullet_stl.PairFetchResponse, error) {
 	return m.allPairsForSubject(subject, false)
 }
 
-func (m *AtomicMesh) AllPairsForPrefixSubject(subject ListSubject) (*PairFetchResponse, error) {
+func (m *AtomicMesh) AllPairsForPrefixSubject(subject bullet_stl.ListSubject) (*bullet_stl.PairFetchResponse, error) {
 	return m.allPairsForSubject(subject, true)
 }
 
-func (m *AtomicMesh) AllPairsForObject(object ListObject) (*PairFetchResponse, error) {
-	return m.AllPairsForManyObjects([]ListObject{object})
+func (m *AtomicMesh) AllPairsForObject(object bullet_stl.ListObject) (*bullet_stl.PairFetchResponse, error) {
+	return m.AllPairsForManyObjects([]bullet_stl.ListObject{object})
 }
 
-func (m *AtomicMesh) AllPairsForManyObjects(objects []ListObject) (*PairFetchResponse, error) {
+func (m *AtomicMesh) AllPairsForManyObjects(objects []bullet_stl.ListObject) (*bullet_stl.PairFetchResponse, error) {
 	prefixes := make([]string, 0, len(objects))
 	for _, object := range objects {
 		prefixes = append(prefixes, buildKey(m.MeshName, m.BackwardSeparator, object.Value, nil, false))
@@ -123,20 +124,20 @@ func (m *AtomicMesh) AllPairsForManyObjects(objects []ListObject) (*PairFetchRes
 		return nil, nil
 	}
 
-	pairs := make([]ManyToManyPair, 0, len(items))
+	pairs := make([]bullet_stl.ManyToManyPair, 0, len(items))
 	for _, item := range items {
 		parts := strings.Split(item.Key, m.BackwardSeparator)
 		if len(parts) != 3 || parts[0] != m.MeshName {
 			return nil, errors.New("expected <meshname><separator><object><separator><subject>")
 		}
-		pairs = append(pairs, ManyToManyPair{
-			Subject: ListSubject{Value: parts[2]},
-			Object:  ListObject{Value: parts[1]},
+		pairs = append(pairs, bullet_stl.ManyToManyPair{
+			Subject: bullet_stl.ListSubject{Value: parts[2]},
+			Object:  bullet_stl.ListObject{Value: parts[1]},
 			Rank:    metricRank(item.Value.Metric),
 		})
 	}
 	sortPairs(pairs)
-	return &PairFetchResponse{Pairs: pairs}, nil
+	return &bullet_stl.PairFetchResponse{Pairs: pairs}, nil
 }
 
 func (m *AtomicMesh) applyMutation(mutation model.TrackMutation) error {
@@ -150,7 +151,7 @@ func (m *AtomicMesh) applyMutation(mutation model.TrackMutation) error {
 	return nil
 }
 
-func (m *AtomicMesh) allPairsForSubject(subject ListSubject, subjectIsPrefix bool) (*PairFetchResponse, error) {
+func (m *AtomicMesh) allPairsForSubject(subject bullet_stl.ListSubject, subjectIsPrefix bool) (*bullet_stl.PairFetchResponse, error) {
 	prefix := buildKey(m.MeshName, m.ForwardSeparator, subject.Value, nil, subjectIsPrefix)
 	items, err := m.TrackStore.GetItemsByKeyPrefix(m.BucketId, prefix, nil, nil, false)
 	if err != nil {
@@ -160,22 +161,22 @@ func (m *AtomicMesh) allPairsForSubject(subject ListSubject, subjectIsPrefix boo
 	if err != nil || len(pairs) == 0 {
 		return nil, err
 	}
-	return &PairFetchResponse{Pairs: pairs}, nil
+	return &bullet_stl.PairFetchResponse{Pairs: pairs}, nil
 }
 
-func (m *AtomicMesh) forwardPairs(items []model.TrackKeyValueItem) ([]ManyToManyPair, error) {
+func (m *AtomicMesh) forwardPairs(items []model.TrackKeyValueItem) ([]bullet_stl.ManyToManyPair, error) {
 	if len(items) == 0 {
 		return nil, nil
 	}
-	pairs := make([]ManyToManyPair, 0, len(items))
+	pairs := make([]bullet_stl.ManyToManyPair, 0, len(items))
 	for _, item := range items {
 		parts := strings.Split(item.Key, m.ForwardSeparator)
 		if len(parts) != 3 || parts[0] != m.MeshName {
 			return nil, errors.New("expected <meshname><separator><subject><separator><object>")
 		}
-		pairs = append(pairs, ManyToManyPair{
-			Subject: ListSubject{Value: parts[1]},
-			Object:  ListObject{Value: parts[2]},
+		pairs = append(pairs, bullet_stl.ManyToManyPair{
+			Subject: bullet_stl.ListSubject{Value: parts[1]},
+			Object:  bullet_stl.ListObject{Value: parts[2]},
 			Rank:    metricRank(item.Value.Metric),
 		})
 	}
@@ -198,11 +199,26 @@ func metricRank(metric *float64) int32 {
 	return int32(*metric)
 }
 
-func sortPairs(pairs []ManyToManyPair) {
+func sortPairs(pairs []bullet_stl.ManyToManyPair) {
 	sort.Slice(pairs, func(i, j int) bool {
 		if pairs[i].Subject.Value == pairs[j].Subject.Value {
 			return pairs[i].Object.Value < pairs[j].Object.Value
 		}
 		return pairs[i].Subject.Value < pairs[j].Subject.Value
 	})
+}
+
+// generates the key name. If the object is provided, is it appended
+func buildKey(listName string, separator string, subject string, object *string, subjectIsActuallyAPrefix bool) string {
+	var key = listName + separator + subject
+
+	//how this works is that the separator at the end acts as a delimter of the end of the key, as in subject:object
+	//so if you're looking for all keys that use "sub", you don't want to look for "sub:"
+	if !subjectIsActuallyAPrefix {
+		key += separator
+	}
+	if object != nil {
+		key = key + *object
+	}
+	return key
 }
