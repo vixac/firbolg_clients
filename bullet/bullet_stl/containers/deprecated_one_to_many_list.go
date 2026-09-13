@@ -9,12 +9,6 @@ import (
 	"github.com/vixac/bullet/model"
 )
 
-type ManyToManyPair struct {
-	Subject ListSubject //the item above
-	Object  ListObject  //the item below
-	Rank    int32       //just metadata for the user
-}
-
 type PairFetchResponse struct {
 	Pairs []ManyToManyPair
 }
@@ -22,7 +16,6 @@ type PairFetchResponse struct {
 type ForwardMesh interface {
 	AppendPairs(pairs []ManyToManyPair) error
 	RemovePairs(pairs []ManyToManyPair) error
-	RemoveSubject(subject ListSubject) error
 	AllPairsForSubject(subject ListSubject) (*PairFetchResponse, error)
 	AllPairsForPrefixSubject(subject ListSubject) (*PairFetchResponse, error)
 }
@@ -74,14 +67,6 @@ func (b *BulletForwardMesh) RemovePairs(pairs []ManyToManyPair) error {
 	}
 
 	return b.TrackStore.TrackDeleteMany(values)
-}
-
-func (b *BulletForwardMesh) RemoveSubject(subject ListSubject) error {
-	allPairs, err := b.AllPairsForSubject(subject)
-	if err != nil {
-		return nil
-	}
-	return b.RemovePairs(allPairs.Pairs)
 }
 
 func (b *BulletForwardMesh) AllPairsForPrefixSubject(subject ListSubject) (*PairFetchResponse, error) {

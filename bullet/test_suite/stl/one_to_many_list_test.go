@@ -64,7 +64,10 @@ func TestOneToManyInsertAndDelete(t *testing.T) {
 	assert.Equal(t, len(foundObjects.Pairs), 1)
 	assert.Equal(t, foundObjects.Pairs[0].Object.Value, "churchill")
 
-	err = mesh.RemoveSubject(italy)
+	// Removing a known edge is the atomic deletion operation exposed by
+	// ForwardMesh. Removing all edges for a subject is intentionally not part
+	// of the interface.
+	err = mesh.RemovePairs([]bullet_stl.ManyToManyPair{pairs[3]})
 	assert.NoError(t, err)
 	foundObjects, err = mesh.AllPairsForSubject(italy)
 	assert.NoError(t, err)
