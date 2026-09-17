@@ -46,8 +46,8 @@ github.com/twitchyliquid64/golang-asm v0.15.1 h1:SU5vSMR7hnwNxj24w34ZyCi/FmDZTkS
 github.com/twitchyliquid64/golang-asm v0.15.1/go.mod h1:a1lVb/DtPvCB8fslRZhAngC2+aY1QWCk3Cedj/Gdt08=
 github.com/ugorji/go/codec v1.2.12 h1:9LC83zGrHhuUA9l16C9AHXAqEV/2wBQ4nkvumAE65EE=
 github.com/ugorji/go/codec v1.2.12/go.mod h1:UNopzCgEMSXjBc6AOMqYvWC1ktqTAfzJZUZgYf6w6lg=
-github.com/vixac/bullet v0.3.1 h1:pR5gnjfZ3wteZ3lN3XIwe53J6mnStyoHPp8Zj2GYEnM=
-github.com/vixac/bullet v0.3.1/go.mod h1:lSVkz0OFe4UqCj13ID1LjOWl12RGKFS3WKUO8rZhbok=
+github.com/vixac/bullet v0.3.2 h1:PdzWPHRcg5W0Q2r5AO083nuRlN85EJd8VF/o9GwQozo=
+github.com/vixac/bullet v0.3.2/go.mod h1:lSVkz0OFe4UqCj13ID1LjOWl12RGKFS3WKUO8rZhbok=
 golang.org/x/arch v0.8.0 h1:3wRIsP3pM4yUptoR96otTUOXI367OS0+c9eeRi9doIc=
 golang.org/x/arch v0.8.0/go.mod h1:FEVrYAQjsQXMVJ1nsMoVVXPZg6p2JE2mx8psSWTDQys=
 golang.org/x/crypto v0.38.0 h1:jt+WWG8IZlBnVbomuhg2Mdq0+BBQaHbtqHEFEigjUV8=
