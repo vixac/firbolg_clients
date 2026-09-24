@@ -46,7 +46,7 @@ func (b *BulletForwardMesh) AppendPairs(pairs []ManyToManyPair) error {
 		objectValue := pair.Object.Value
 		key := buildKey(b.MeshName, b.Separator, pair.Subject.Value, &objectValue, false)
 		floatMetric := float64(pair.Rank)
-		err := b.TrackStore.TrackPut(b.BucketId, key, 0, nil, &floatMetric)
+		err := b.TrackStore.TrackPut(b.BucketId, key, model.TrackValue{Metric: &floatMetric})
 		if err != nil {
 			//VX:Note partial fail, some may have inserted.
 			return err

@@ -69,7 +69,7 @@ func (l *BulletOneWayList) Upsert(s ListSubject, o ListObject) error {
 	}
 
 	key := buildKey(l.ListName, l.KeySeparator, s.Value, &o.Value, false)
-	return l.TrackStore.TrackPut(l.BucketId, key, 0, nil, nil)
+	return l.TrackStore.TrackPut(l.BucketId, key, model.TrackValue{})
 }
 
 func (l *BulletOneWayList) DeleteBySub(s ListSubject) error {
