@@ -58,7 +58,7 @@ func (b *BulletCollection) CreateItemUnder(key string, payload string, updateTim
 		updateUnix := float64(updateTime.Unix())
 		updateTimeUnix = &updateUnix
 	}
-	err = b.TrackStore.TrackPut(b.BucketId, key, depotID, nil, updateTimeUnix)
+	err = b.TrackStore.TrackPut(b.BucketId, key, model.TrackValue{Value: depotID, Metric: updateTimeUnix})
 	if err != nil {
 		fmt.Printf("VX: Warn this is an inconsistent state. We have an orphan depot item: %d\n", depotID)
 		return nil, err
@@ -82,7 +82,7 @@ func (b *BulletCollection) EditPayload(id CollectionId, payload string, updateTi
 		updateUnix := float64(updateTime.Unix())
 		updateTimeUnix = &updateUnix
 	}
-	return b.TrackStore.TrackPut(b.BucketId, id.Key, id.DepotId, nil, updateTimeUnix)
+	return b.TrackStore.TrackPut(b.BucketId, id.Key, model.TrackValue{Value: id.DepotId, Metric: updateTimeUnix})
 }
 
 func (b *BulletCollection) AllItems() (map[CollectionId]string, error) {
@@ -156,7 +156,7 @@ func (b *BulletCollection) AllItemsUnderPrefix(prefix string) (map[CollectionId]
 }
 
 func (b *BulletCollection) ItemsForKeys(keys []string) (map[CollectionId]CollectionItem, error) {
-	values, _, err := b.TrackStore.TrackGetMany(map[int32][]string{b.BucketId: keys})
+	values, _, err := b.TrackStore.TrackGetMany(map[int32][]string{b.BucketId: keys}, model.TrackReadOptions{})
 	if err != nil {
 		return nil, err
 	}

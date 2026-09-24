@@ -39,12 +39,12 @@ func (b *BulletMesh) AppendPairs(pairs []ManyToManyPair) error {
 		forwardKey := buildKey(b.MeshName, b.ForwardSeparator, pair.Subject.Value, &objectValue, false)
 		backwardKey := buildKey(b.MeshName, b.BackwardSeparator, pair.Object.Value, &pair.Subject.Value, false)
 		floatMetric := float64(pair.Rank)
-		err := b.TrackStore.TrackPut(b.BucketId, forwardKey, 0, nil, &floatMetric)
+		err := b.TrackStore.TrackPut(b.BucketId, forwardKey, model.TrackValue{Metric: &floatMetric})
 		if err != nil {
 			//VX:Note partial fail, some may have inserted.
 			return err
 		}
-		err = b.TrackStore.TrackPut(b.BucketId, backwardKey, 0, nil, &floatMetric)
+		err = b.TrackStore.TrackPut(b.BucketId, backwardKey, model.TrackValue{Metric: &floatMetric})
 		if err != nil {
 			//VX:Note partial fail, some may have inserted.
 			return err

@@ -56,8 +56,8 @@ func (m *AtomicMesh) AppendPairs(pairs []bullet_stl.ManyToManyPair) error {
 		object := pair.Object.Value
 		rank := float64(pair.Rank)
 		mutation.Puts = append(mutation.Puts,
-			model.TrackPut{BucketID: m.BucketId, Key: buildKey(m.MeshName, m.ForwardSeparator, pair.Subject.Value, &object, false), Metric: &rank},
-			model.TrackPut{BucketID: m.BucketId, Key: buildKey(m.MeshName, m.BackwardSeparator, pair.Object.Value, &pair.Subject.Value, false), Metric: &rank},
+			model.TrackPut{BucketID: m.BucketId, Key: buildKey(m.MeshName, m.ForwardSeparator, pair.Subject.Value, &object, false), Value: model.TrackValue{Metric: &rank}},
+			model.TrackPut{BucketID: m.BucketId, Key: buildKey(m.MeshName, m.BackwardSeparator, pair.Object.Value, &pair.Subject.Value, false), Value: model.TrackValue{Metric: &rank}},
 		)
 	}
 	return m.applyMutation(mutation)
